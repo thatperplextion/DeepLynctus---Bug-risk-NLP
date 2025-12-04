@@ -113,8 +113,12 @@ export default function Overview({ onFileSelect, onProjectChange }) {
   }
 
   const handleExportReport = async () => {
+    if (!projectId || projectId === 'demo') {
+      alert('Please scan a repository first before exporting.')
+      return
+    }
     try {
-      const blob = await exportReport(projectId, 'pdf')
+      const blob = await exportReport(projectId, ['summary', 'risks', 'smells'])
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

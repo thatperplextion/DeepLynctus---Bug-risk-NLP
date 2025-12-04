@@ -1,4 +1,4 @@
-from services.db import db
+from services.db import get_database
 from datetime import datetime
 
 class ReportService:
@@ -8,6 +8,9 @@ class ReportService:
         Generate a PDF report for the given project.
         Uses ReportLab if available, otherwise returns a formatted text file.
         """
+        # Get database instance
+        db = get_database()
+        
         # Gather data using async methods
         project = await db.get_project(project_id) or {}
         metrics_list = await db.get_metrics(project_id)
