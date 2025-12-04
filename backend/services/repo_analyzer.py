@@ -223,7 +223,10 @@ class PythonAnalyzer:
                        functions: List[ast.AST], classes: List[ast.AST]) -> List[CodeSmell]:
         """Detect code smells in Python code."""
         smells = []
+        content = '\n'.join(lines)
+        loc = len(lines)
         
+        # ===== FUNCTION-LEVEL SMELLS =====
         for func in functions:
             func_name = func.name
             func_lines = func.end_lineno - func.lineno + 1 if hasattr(func, 'end_lineno') else 50
@@ -266,6 +269,44 @@ class PythonAnalyzer:
                     message=f"Function '{func_name}' has {num_args} parameters (recommended: ≤5)",
                     suggestion="Consider using a data class or dictionary to group related parameters"
                 ))
+            
+            # Missing docstring for public functions
+            if not func_name.startswith('_') and not ast.get_docstring(func):
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Missing Docstring",
+                    severity=2,
+                    line=func.lineno,
+                    message=f"Public function '{func_name}' lacks a docstring",
+                    suggestion="Add a docstring describing purpose, parameters, and return value"
+                ))
+        
+        # ===== EXCEPTION HANDLING SMELLS =====
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ExceptHandler):
+                # Bare except clause (catches everything including KeyboardInterrupt)
+                if node.type is None:
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Bare Except",
+                        severity=4,
+                        line=node.lineno,
+                        message="Bare 'except:' clause catches all exceptions including system exits",
+                        suggestion="Specify exception types: 'except Exception:' or more specific"
+                    ))
+                
+                # Check for pass-only except blocks (swallowing exceptions)
+                if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Swallowed Exception",
+                        severity=4,
+                        line=node.lineno,
+                        message="Exception is silently swallowed with 'pass'",
+                        suggestion="Log the exception or re-raise after handling"
+                    ))
+        
+        # ===== STRUCTURAL SMELLS =====
         
         # Deep nesting
         nesting_visitor = NestingVisitor()
@@ -281,10 +322,17 @@ class PythonAnalyzer:
                 suggestion="Use early returns, guard clauses, or extract nested logic into functions"
             ))
         
-        # God class (too many methods)
+        # God class (too many methods or attributes)
         for cls in classes:
             methods = [node for node in ast.walk(cls) 
                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+            
+            # Count instance attributes
+            attrs = set()
+            for node in ast.walk(cls):
+                if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == 'self':
+                    attrs.add(node.attr)
+            
             if len(methods) > 20:
                 severity = 4 if len(methods) > 30 else 3
                 smells.append(CodeSmell(
@@ -295,18 +343,119 @@ class PythonAnalyzer:
                     message=f"Class '{cls.name}' has {len(methods)} methods (recommended: ≤20)",
                     suggestion="Consider splitting into smaller, focused classes using composition"
                 ))
-        
-        # Missing docstrings
-        for func in functions:
-            if not ast.get_docstring(func):
+            
+            if len(attrs) > 15:
                 smells.append(CodeSmell(
                     path=path,
-                    type="Missing Docstring",
-                    severity=2,
-                    line=func.lineno,
-                    message=f"Function '{func.name}' lacks a docstring",
-                    suggestion="Add a docstring describing the function's purpose, parameters, and return value"
+                    type="Data Clump",
+                    severity=3,
+                    line=cls.lineno,
+                    message=f"Class '{cls.name}' has {len(attrs)} attributes (recommended: ≤15)",
+                    suggestion="Group related attributes into separate data classes"
                 ))
+        
+        # ===== MAGIC VALUES AND CONSTANTS =====
+        
+        # Magic numbers (large numeric literals not in obvious patterns)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+                val = node.value
+                # Skip common values like 0, 1, 2, -1, 100, etc.
+                if isinstance(val, int) and abs(val) > 100 and val not in {1000, 10000, 100000}:
+                    line_content = lines[node.lineno - 1] if node.lineno <= len(lines) else ''
+                    # Skip if it's in a constant assignment
+                    if not re.search(r'^[A-Z_]+\s*=', line_content.strip()):
+                        smells.append(CodeSmell(
+                            path=path,
+                            type="Magic Number",
+                            severity=3,
+                            line=node.lineno,
+                            message=f"Magic number {val} found - consider using a named constant",
+                            suggestion="Extract to a named constant: MY_CONSTANT = " + str(val)
+                        ))
+                        break  # Only report once per file
+        
+        # ===== CODE MAINTENANCE SMELLS =====
+        
+        # TODO/FIXME/HACK comments
+        todo_count = 0
+        first_todo_line = None
+        for i, line in enumerate(lines, 1):
+            if re.search(r'#\s*(TODO|FIXME|HACK|XXX):', line, re.IGNORECASE):
+                todo_count += 1
+                if first_todo_line is None:
+                    first_todo_line = i
+        
+        if todo_count > 0:
+            smells.append(CodeSmell(
+                path=path,
+                type="Unresolved TODOs",
+                severity=2 if todo_count < 5 else 3,
+                line=first_todo_line or 1,
+                message=f"Found {todo_count} unresolved TODO/FIXME comments",
+                suggestion="Review and address or create tickets for tracking"
+            ))
+        
+        # Commented out code (lines starting with # followed by code-like patterns)
+        commented_code_count = 0
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith('#') and not stripped.startswith('# '):
+                # Check if it looks like commented code
+                after_hash = stripped[1:].strip()
+                if re.match(r'^(def |class |import |from |if |for |while |return |self\.)', after_hash):
+                    commented_code_count += 1
+        
+        if commented_code_count >= 3:
+            smells.append(CodeSmell(
+                path=path,
+                type="Commented Code",
+                severity=2,
+                line=1,
+                message=f"Found {commented_code_count} lines of commented-out code",
+                suggestion="Remove dead code - use version control for history"
+            ))
+        
+        # Debug print statements
+        print_count = sum(1 for line in lines if re.search(r'\bprint\s*\(', line) and 
+                         not line.strip().startswith('#'))
+        if print_count > 5:
+            smells.append(CodeSmell(
+                path=path,
+                type="Debug Code",
+                severity=2,
+                line=1,
+                message=f"Found {print_count} print statements - likely debug code",
+                suggestion="Use logging module instead of print for production code"
+            ))
+        
+        # ===== IMPORT SMELLS =====
+        
+        # Star imports
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(alias.name == '*' for alias in node.names):
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Star Import",
+                    severity=3,
+                    line=node.lineno,
+                    message=f"Star import from '{node.module}' pollutes namespace",
+                    suggestion="Import specific names instead of using 'from module import *'"
+                ))
+        
+        # ===== FILE-LEVEL SMELLS =====
+        
+        # Very long file (only flag if truly excessive)
+        if loc > 500:
+            severity = 3 if loc > 800 else 2
+            smells.append(CodeSmell(
+                path=path,
+                type="Long File",
+                severity=severity,
+                line=1,
+                message=f"File has {loc} lines (recommended: <500)",
+                suggestion="Consider splitting into multiple modules by responsibility"
+            ))
         
         return smells
 
@@ -685,63 +834,105 @@ class RepoAnalyzer:
             smells_by_file[smell.path].append(smell)
         
         for m in metrics:
-            # Calculate risk score based on multiple factors
+            # Calculate risk score based on multiple weighted factors
             score = 0
             top_features = []
             
-            # Complexity contribution (0-30 points)
-            if m.cyclomatic_max > 20:
-                score += 30
-                top_features.append("cyclomatic_max")
-            elif m.cyclomatic_max > 15:
-                score += 25
-                top_features.append("cyclomatic_max")
-            elif m.cyclomatic_max > 10:
-                score += 20
-                top_features.append("cyclomatic_max")
-            elif m.cyclomatic_max > 5:
-                score += 10
-            
-            # Size contribution (0-20 points)
-            if m.loc > 500:
-                score += 20
-                top_features.append("loc")
-            elif m.loc > 300:
-                score += 15
-                top_features.append("loc")
-            elif m.loc > 200:
-                score += 10
-            
-            # Nesting contribution (0-20 points)
-            if m.nesting_max > 6:
-                score += 20
-                top_features.append("nesting_max")
-            elif m.nesting_max > 5:
-                score += 15
-                top_features.append("nesting_max")
-            elif m.nesting_max > 4:
-                score += 10
-            
-            # Code smells contribution (0-30 points)
             file_smells = smells_by_file.get(m.path, [])
-            high_severity_smells = sum(1 for s in file_smells if s.severity >= 4)
-            if high_severity_smells > 3:
-                score += 30
-                top_features.append("code_smells")
-            elif high_severity_smells > 1:
-                score += 20
-                top_features.append("code_smells")
-            elif len(file_smells) > 5:
-                score += 15
-            elif len(file_smells) > 2:
-                score += 10
             
-            # Determine tier
-            if score >= 80:
+            # ===== CRITICAL FACTORS (highest weight) =====
+            
+            # High cyclomatic complexity - major bug predictor (0-25 points)
+            if m.cyclomatic_max > 25:
+                score += 25
+                top_features.append("extreme_complexity")
+            elif m.cyclomatic_max > 15:
+                score += 20
+                top_features.append("high_complexity")
+            elif m.cyclomatic_max > 10:
+                score += 12
+                top_features.append("moderate_complexity")
+            
+            # Critical code smells (0-25 points)
+            critical_smells = [s for s in file_smells if s.severity >= 4]
+            critical_types = set(s.type for s in critical_smells)
+            
+            # Weight certain smell types higher
+            high_risk_smells = {'Callback Hell', 'Empty Catch Block', 'Potential Memory Leak', 
+                               'High Complexity', 'Long Function', 'God Class'}
+            high_risk_count = sum(1 for s in critical_smells if s.type in high_risk_smells)
+            
+            if high_risk_count >= 3:
+                score += 25
+                top_features.append("multiple_critical_issues")
+            elif high_risk_count >= 2:
+                score += 20
+                top_features.append("critical_issues")
+            elif high_risk_count >= 1:
+                score += 15
+                top_features.append("has_critical_issue")
+            
+            # ===== IMPORTANT FACTORS (medium weight) =====
+            
+            # Deep nesting - cognitive complexity (0-15 points)
+            if m.nesting_max > 7:
+                score += 15
+                top_features.append("deep_nesting")
+            elif m.nesting_max > 5:
+                score += 10
+                top_features.append("nesting_depth")
+            elif m.nesting_max > 4:
+                score += 5
+            
+            # Function count (too many functions = hard to maintain) (0-10 points)
+            if m.fn_count > 30:
+                score += 10
+                top_features.append("too_many_functions")
+            elif m.fn_count > 20:
+                score += 5
+            
+            # Low comment ratio (potential documentation debt) (0-5 points)
+            if m.sloc > 100 and m.comment_ratio < 0.02:
+                score += 5
+                top_features.append("poor_documentation")
+            
+            # ===== SECONDARY FACTORS (lower weight) =====
+            
+            # Medium severity smells (0-10 points)
+            medium_smells = sum(1 for s in file_smells if s.severity == 3)
+            if medium_smells >= 5:
+                score += 10
+            elif medium_smells >= 3:
+                score += 5
+            
+            # File size - only counts if very large (0-10 points)
+            if m.loc > 800:
+                score += 10
+                top_features.append("very_large_file")
+            elif m.loc > 500:
+                score += 5
+            
+            # Low severity smells (0-5 points)
+            low_smells = sum(1 for s in file_smells if s.severity <= 2)
+            if low_smells >= 8:
+                score += 5
+            
+            # ===== BONUS RISK INDICATORS =====
+            
+            # Multiple smell types indicate systemic issues
+            smell_types = set(s.type for s in file_smells)
+            if len(smell_types) >= 5:
+                score += 10
+                top_features.append("multiple_issue_types")
+            elif len(smell_types) >= 3:
+                score += 5
+            
+            # Determine tier based on score
+            if score >= 70:
                 tier = "Critical"
-            elif score >= 60:
+            elif score >= 50:
                 tier = "High"
-            elif score >= 40:
+            elif score >= 30:
                 tier = "Medium"
             else:
                 tier = "Low"
@@ -750,7 +941,7 @@ class RepoAnalyzer:
                 path=m.path,
                 risk_score=min(score, 100),
                 tier=tier,
-                top_features=top_features[:3]
+                top_features=top_features[:4]  # Top 4 contributing factors
             ))
         
         # Sort by risk score descending
