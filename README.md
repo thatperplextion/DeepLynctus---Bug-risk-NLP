@@ -1,6 +1,6 @@
-# CodeSenseX – Intelligent Code Quality & Bug Risk Analyzer (AIML + NLP)
+# DeepLynctus– Intelligent Code Quality & Bug Risk Analyzer (AIML + NLP)
 
-CodeSenseX is an AI-powered system that scans a source-code repository to detect bug-prone files, code smells, technical debt risk, and provides smart refactoring suggestions.  
+DeepLynctus is an AI-powered system that scans a source-code repository to detect bug-prone files, code smells, technical debt risk, and provides smart refactoring suggestions.  
 It combines static analysis, ML prediction, and NLP patterns, along with visual dashboards and PDF reports.
 
 ---
@@ -163,7 +163,7 @@ npm start
 MongoDB required locally or cloud.
 
 📜 Final Note
-CodeSenseX helps engineering teams find weak code areas before they become real bugs.
+DeepLynctus helps engineering teams find weak code areas before they become real bugs.
 It reflects strong knowledge of:
 
 ML,
