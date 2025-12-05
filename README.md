@@ -1,51 +1,15 @@
-<<<<<<< HEAD
-# 🔬 CodeSenseX – Intelligent Code Quality & Bug Risk Analyzer
 
-<div align="center">
-
-**AI-Powered Static Analysis • ML-Based Bug Risk Prediction • NLP Code Understanding**
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-00C7B7?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python)](https://python.org/)
-[![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-
-</div>
-
----
-
-## 🎯 Overview
-
-CodeSenseX is a cutting-edge code quality analysis platform that combines **Machine Learning**, **Natural Language Processing**, and **Static Analysis** to predict bug-prone code, detect code smells, and provide intelligent refactoring suggestions.
-
-### Key Features
-
-- 🔮 **ML-Based Bug Risk Prediction** – Heuristic and ML models for risk scoring
-- 🧠 **NLP-Powered Code Understanding** – Natural language explanations of code issues
-- 📊 **Rich Visualizations** – Interactive heatmaps, charts, and risk dashboards
-- 🎯 **SHAP Explainability** – Understand why code is flagged as risky
-- 📝 **AI Refactoring Suggestions** – GPT-powered fix recommendations
-- 📄 **PDF Report Export** – Generate executive summary reports
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js** 18+ & npm
-- **Python** 3.10+
-- **MongoDB** (optional – uses in-memory DB by default)
-
----
-=======
 # DeepLynctus– Intelligent Code Quality & Bug Risk Analyzer (AIML + NLP)
->>>>>>> e552d18776eb64ce6968912accc4050c5e5fcfd7
 
 DeepLynctus is an AI-powered system that scans a source-code repository to detect bug-prone files, code smells, technical debt risk, and provides smart refactoring suggestions.  
 It combines static analysis, ML prediction, and NLP patterns, along with visual dashboards and PDF reports.
 
 ---
+## Prerequisites
+
+- **Node.js** 18+ & npm
+- **Python** 3.10+
+- **MongoDB** (optional – uses in-memory DB by default)
 
 ## 🚀 Features
 
