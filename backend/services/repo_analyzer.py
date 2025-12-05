@@ -527,68 +527,94 @@ class JavaScriptAnalyzer:
     def _detect_smells(content: str, lines: List[str], path: str) -> List[CodeSmell]:
         """Detect code smells in JavaScript/TypeScript."""
         smells = []
+        loc = len(lines)
         
         # ===== HIGH SEVERITY ISSUES (4-5) =====
         
-        # Deeply nested callbacks (callback hell)
-        callback_depth = 0
+        # Deeply nested callbacks - track actual brace nesting within callback patterns
         max_callback_depth = 0
-        for line in lines:
-            callback_depth += line.count('function(') + line.count('=>')
-            callback_depth -= line.count('});') + line.count('})') 
-            callback_depth = max(0, callback_depth)
-            max_callback_depth = max(max_callback_depth, callback_depth)
+        current_callback_depth = 0
+        in_callback = False
         
-        if max_callback_depth > 4:
+        for line in lines:
+            stripped = line.strip()
+            # Detect callback pattern starts
+            callback_starts = len(re.findall(r'function\s*\([^)]*\)\s*{|=>\s*{|\(\s*\([^)]*\)\s*=>\s*{', line))
+            callback_ends = stripped.count('});') + stripped.count('})')
+            
+            current_callback_depth += callback_starts
+            current_callback_depth = max(0, current_callback_depth - callback_ends)
+            max_callback_depth = max(max_callback_depth, current_callback_depth)
+        
+        # Only report if genuinely deep (4+ levels is unusual)
+        if max_callback_depth >= 4:
             smells.append(CodeSmell(
                 path=path,
                 type="Callback Hell",
-                severity=5,
+                severity=5 if max_callback_depth >= 6 else 4,
                 line=1,
                 message=f"Deep callback nesting detected (depth: {max_callback_depth})",
                 suggestion="Refactor using async/await or Promises to flatten callback structure"
             ))
         
-        # Large functions (estimate by counting lines between function declarations)
-        func_pattern = re.compile(r'(function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|(?:async\s+)?\w+\s*\([^)]*\)\s*{)')
-        func_matches = list(func_pattern.finditer(content))
-        for i, match in enumerate(func_matches):
+        # Large functions - find function boundaries more accurately
+        func_pattern = re.compile(
+            r'(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|(?:async\s+)?(\w+)\s*\([^)]*\)\s*{)',
+            re.MULTILINE
+        )
+        
+        for match in func_pattern.finditer(content):
+            func_name = match.group(1) or match.group(2) or match.group(3) or 'anonymous'
             start_pos = match.end()
-            end_pos = func_matches[i + 1].start() if i + 1 < len(func_matches) else len(content)
-            func_content = content[start_pos:end_pos]
-            func_lines = func_content.count('\n')
+            
+            # Find matching closing brace
+            brace_count = 1
+            end_pos = start_pos
+            for i, char in enumerate(content[start_pos:], start_pos):
+                if char == '{':
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_pos = i
+                        break
+            
+            func_lines = content[start_pos:end_pos].count('\n')
+            line_num = content[:match.start()].count('\n') + 1
+            
             if func_lines > 80:
-                line_num = content[:match.start()].count('\n') + 1
                 smells.append(CodeSmell(
                     path=path,
                     type="Long Function",
                     severity=5 if func_lines > 150 else 4,
                     line=line_num,
-                    message=f"Function has approximately {func_lines} lines (recommended: <50)",
+                    message=f"Function '{func_name}' has approximately {func_lines} lines (recommended: <50)",
                     suggestion="Break down into smaller, single-responsibility functions"
                 ))
         
         # Complex ternary expressions (nested ternaries)
-        nested_ternary = re.findall(r'\?[^:]+\?', content)
-        if len(nested_ternary) > 0:
+        nested_ternary_count = len(re.findall(r'\?[^?:]+\?', content))
+        if nested_ternary_count > 0:
             smells.append(CodeSmell(
                 path=path,
                 type="Nested Ternary",
                 severity=4,
                 line=1,
-                message=f"Found {len(nested_ternary)} nested ternary expressions",
-                suggestion="Replace nested ternaries with if-else statements or extract to functions"
+                message=f"Found {nested_ternary_count} nested ternary expression(s)",
+                suggestion="Replace nested ternaries with if-else statements or helper functions"
             ))
         
-        # Hardcoded values (magic numbers/strings)
-        magic_numbers = re.findall(r'(?<!["\'])\b(?:(?<!\w)(?:[2-9]\d{2,}|1\d{3,})|0x[0-9a-fA-F]{4,})\b(?!["\'])', content)
-        if len(magic_numbers) > 5:
+        # Magic numbers - look for large numeric literals not in obvious constant patterns
+        magic_numbers = re.findall(r'(?<!["\'\w])(?:[2-9]\d{2,}|1\d{3,})(?!["\'\w])', content)
+        # Filter out common values like array indices, pixel values, etc.
+        significant_magic = [n for n in magic_numbers if int(n) not in {100, 200, 300, 400, 500, 1000, 2000}]
+        if len(significant_magic) > 5:
             smells.append(CodeSmell(
                 path=path,
                 type="Magic Numbers",
                 severity=3,
                 line=1,
-                message=f"Found {len(magic_numbers)} potential magic numbers",
+                message=f"Found {len(significant_magic)} potential magic numbers",
                 suggestion="Extract magic numbers to named constants for better readability"
             ))
         
