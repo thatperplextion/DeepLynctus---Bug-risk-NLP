@@ -60,15 +60,13 @@ function App(){
         </div>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-1 glass rounded-full px-2 py-1">
+        <nav className="hidden md:flex items-center gap-2 glass rounded-full px-3 py-2">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => { setCurrentPage(item.id); setSelectedFile(null); }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                currentPage === item.id
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              className={`btn-thin ${
+                currentPage === item.id ? 'active' : ''
               }`}
             >
               <span className="mr-2">{item.icon}</span>

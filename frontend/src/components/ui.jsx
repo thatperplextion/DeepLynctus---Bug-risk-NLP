@@ -21,17 +21,51 @@ export function GradientButton({ children, onClick, className = '', size = 'md',
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg'
   }
-  const variants = {
-    primary: 'bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-600 hover:via-cyan-600 hover:to-sky-600',
-    secondary: 'bg-white/10 hover:bg-white/20 border border-white/20',
-    danger: 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600'
+  
+  // Primary uses blob style, secondary uses magnetic style
+  if (variant === 'primary') {
+    return (
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className={`btn-blob btn-ripple ${sizes[size]} ${className}`}
+      >
+        {children}
+      </motion.button>
+    )
   }
+  
+  if (variant === 'secondary') {
+    return (
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className={`btn-magnetic btn-ripple ${sizes[size]} ${className}`}
+      >
+        <span className="relative z-10">{children}</span>
+      </motion.button>
+    )
+  }
+  
+  // Danger variant
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`${sizes[size]} ${variants[variant]} rounded-xl font-semibold text-white shadow-lg transition-all duration-300 ${className}`}
+      className={`${sizes[size]} bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 rounded-xl font-semibold text-white shadow-lg transition-all duration-300 btn-ripple ${className}`}
+    >
+      {children}
+    </motion.button>
+  )
+}
+
+export function ThinButton({ children, onClick, className = '', active = false }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={`btn-thin ${active ? 'active' : ''} ${className}`}
     >
       {children}
     </motion.button>
