@@ -1,5 +1,6 @@
 """
 Repository Analyzer - Clones and analyzes GitHub repositories for code quality metrics.
+Enterprise-grade detection for real-world issues that cause production incidents.
 """
 
 import os
@@ -11,6 +12,59 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
 import re
+from collections import Counter
+
+
+# ============================================================================
+# ENTERPRISE SECURITY PATTERNS - Real vulnerabilities found in production
+# ============================================================================
+SECURITY_PATTERNS = {
+    'sql_injection': [
+        r'execute\s*\(\s*["\'].*%s',  # String formatting in SQL
+        r'execute\s*\(\s*f["\']',      # f-string in SQL
+        r'cursor\.execute\s*\([^,]+\+',  # String concatenation in SQL
+        r'\.raw\s*\(\s*["\'].*\{',     # Django raw SQL with format
+    ],
+    'hardcoded_secrets': [
+        r'(?:password|passwd|pwd|secret|api_key|apikey|token|auth)\s*=\s*["\'][^"\']{8,}["\']',
+        r'(?:AWS|aws)_(?:SECRET|ACCESS).*=\s*["\'][A-Za-z0-9/+=]{20,}["\']',
+        r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----',
+    ],
+    'insecure_random': [
+        r'random\.random\s*\(',  # Non-cryptographic random
+        r'random\.randint\s*\(',
+        r'Math\.random\s*\(',
+    ],
+    'path_traversal': [
+        r'open\s*\([^)]*\+[^)]*\)',  # Path concatenation without validation
+        r'os\.path\.join\s*\([^)]*request',  # User input in path
+    ],
+    'command_injection': [
+        r'os\.system\s*\([^)]*\+',
+        r'subprocess\.(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True',
+        r'eval\s*\(',
+        r'exec\s*\(',
+    ],
+    'xss_vulnerable': [
+        r'innerHTML\s*=',
+        r'document\.write\s*\(',
+        r'dangerouslySetInnerHTML',
+    ],
+}
+
+# Common performance anti-patterns
+PERFORMANCE_PATTERNS = {
+    'n_plus_one': r'for\s+\w+\s+in\s+\w+.*:\s*\n\s*.*\.(?:get|filter|find|query)',
+    'no_pagination': r'\.(?:all|find)\s*\(\s*\)(?!.*(?:limit|page|skip|offset))',
+    'sync_in_async': r'async\s+def\s+\w+.*\n(?:.*\n)*?.*(?:time\.sleep|requests\.)',
+}
+
+# Memory leak patterns
+MEMORY_PATTERNS = {
+    'event_listener_leak': r'addEventListener\s*\([^)]+\)(?!.*removeEventListener)',
+    'closure_in_loop': r'for\s*\([^)]+\)\s*\{[^}]*(?:setTimeout|setInterval|addEventListener)',
+    'unbounded_cache': r'(?:cache|memo|store)\s*\[[^\]]+\]\s*=(?!.*(?:maxSize|limit|expire))',
+}
 
 
 @dataclass
