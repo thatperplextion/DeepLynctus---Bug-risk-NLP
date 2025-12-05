@@ -6,7 +6,345 @@ class LLMService:
     
     # Comprehensive suggestion templates based on smell types
     SUGGESTION_TEMPLATES = {
-        # ===== CRITICAL ISSUES (Priority: High) =====
+        # ===== CRITICAL SECURITY ISSUES (Priority: Critical) =====
+        "SQL Injection": {
+            "title": "Use Parameterized Queries",
+            "rationale": "SQL injection is OWASP #1 vulnerability. Can lead to complete database compromise.",
+            "snippet": """// VULNERABLE: String concatenation
+const query = `SELECT * FROM users WHERE id = ${userId}`;
+
+// SECURE: Parameterized query (Node.js pg example)
+const result = await pool.query(
+  'SELECT * FROM users WHERE id = $1',
+  [userId]
+);
+
+// SECURE: ORM approach (Prisma)
+const user = await prisma.user.findUnique({
+  where: { id: userId }
+});""",
+            "priority": "Critical",
+            "est_hours": 2
+        },
+        "SQL Injection Risk": {
+            "title": "Use Parameterized Queries",
+            "rationale": "SQL injection is OWASP #1 vulnerability. Can lead to complete database compromise.",
+            "snippet": """// VULNERABLE: Template literal interpolation
+db.query(`SELECT * FROM users WHERE id = ${userId}`);
+
+// SECURE: Parameterized query
+db.query('SELECT * FROM users WHERE id = ?', [userId]);
+
+// SECURE: ORM with type safety
+await User.findOne({ where: { id: userId } });""",
+            "priority": "Critical",
+            "est_hours": 2
+        },
+        "XSS Vulnerability": {
+            "title": "Sanitize User Input Before Rendering",
+            "rationale": "XSS allows attackers to execute malicious scripts in user browsers.",
+            "snippet": """// VULNERABLE: Direct innerHTML
+element.innerHTML = userInput;
+
+// SECURE: Use textContent for text
+element.textContent = userInput;
+
+// SECURE: Sanitize if HTML is needed (DOMPurify)
+import DOMPurify from 'dompurify';
+element.innerHTML = DOMPurify.sanitize(userInput);
+
+// REACT: Avoid dangerouslySetInnerHTML
+// Use sanitized-html or marked with sanitize option""",
+            "priority": "Critical",
+            "est_hours": 2
+        },
+        "Hardcoded Credentials": {
+            "title": "Move Secrets to Environment Variables",
+            "rationale": "Hardcoded credentials get committed to git, leaked in logs, visible in builds.",
+            "snippet": """// VULNERABLE: Hardcoded secret
+const API_KEY = 'sk-abc123xyz789';
+
+// SECURE: Environment variables
+const API_KEY = process.env.API_KEY;
+
+// SECURE: With validation
+const API_KEY = process.env.API_KEY;
+if (!API_KEY) throw new Error('API_KEY not configured');
+
+// Production: Use secrets manager (AWS Secrets, Vault, etc.)
+const secret = await secretsManager.getSecret('api-key');""",
+            "priority": "Critical",
+            "est_hours": 1
+        },
+        "Command Injection": {
+            "title": "Avoid Shell Commands with User Input",
+            "rationale": "Command injection allows arbitrary system command execution.",
+            "snippet": """# VULNERABLE: User input in shell command
+os.system(f'convert {user_filename} output.png')
+subprocess.run(f'ls {user_dir}', shell=True)
+
+# SECURE: Use subprocess without shell
+import shlex
+subprocess.run(['convert', user_filename, 'output.png'])
+
+# SECURE: Validate/sanitize input
+import re
+if not re.match(r'^[a-zA-Z0-9_-]+$', user_input):
+    raise ValueError('Invalid input')""",
+            "priority": "Critical",
+            "est_hours": 2
+        },
+        "Insecure HTTP": {
+            "title": "Use HTTPS for All External Connections",
+            "rationale": "HTTP traffic can be intercepted and modified (MITM attacks).",
+            "snippet": """// INSECURE: Plain HTTP
+fetch('http://api.example.com/data');
+
+// SECURE: Always use HTTPS
+fetch('https://api.example.com/data');
+
+// SECURE: Enforce in API client
+const client = axios.create({
+  baseURL: 'https://api.example.com',
+  // Reject non-HTTPS in production
+});""",
+            "priority": "High",
+            "est_hours": 1
+        },
+        
+        # ===== PERFORMANCE ISSUES (Priority: High) =====
+        "N+1 Query Pattern": {
+            "title": "Batch Database Queries",
+            "rationale": "N+1 queries cause exponential slowdown. 100 items = 101 queries instead of 2.",
+            "snippet": """// SLOW: N+1 Query
+for (const user of users) {
+  const orders = await db.orders.find({ userId: user.id });
+}
+
+// FAST: Batch query with Promise.all
+const userIds = users.map(u => u.id);
+const orders = await db.orders.find({ userId: { $in: userIds } });
+
+// FAST: Use ORM eager loading
+const users = await User.findAll({
+  include: [{ model: Order }]
+});""",
+            "priority": "High",
+            "est_hours": 3
+        },
+        "Blocking I/O": {
+            "title": "Use Async I/O Operations",
+            "rationale": "Sync I/O blocks the event loop, killing Node.js performance.",
+            "snippet": """// BLOCKING: Sync file operations
+const data = fs.readFileSync('file.txt');
+const result = execSync('command');
+
+// NON-BLOCKING: Async operations
+const data = await fs.promises.readFile('file.txt');
+const { stdout } = await exec('command');
+
+// Or with callbacks (older pattern)
+fs.readFile('file.txt', (err, data) => { });""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "Memory Leak Risk": {
+            "title": "Implement Proper Cleanup",
+            "rationale": "Memory leaks cause crashes in long-running applications.",
+            "snippet": """// LEAK: Unbounded growth
+const cache = [];
+setInterval(() => {
+  cache.push(getData()); // Grows forever!
+}, 1000);
+
+// FIXED: Bounded cache
+const MAX_SIZE = 1000;
+setInterval(() => {
+  if (cache.length >= MAX_SIZE) cache.shift();
+  cache.push(getData());
+}, 1000);
+
+// BETTER: Use LRU cache library
+import LRU from 'lru-cache';
+const cache = new LRU({ max: 1000 });""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "Event Listener Leak": {
+            "title": "Clean Up Event Listeners",
+            "rationale": "Event listeners keep references, preventing garbage collection.",
+            "snippet": """// LEAK: No cleanup
+useEffect(() => {
+  window.addEventListener('resize', handler);
+}, []); // Missing cleanup!
+
+// FIXED: Return cleanup function
+useEffect(() => {
+  window.addEventListener('resize', handler);
+  return () => window.removeEventListener('resize', handler);
+}, []);
+
+// MODERN: Use AbortController
+const controller = new AbortController();
+element.addEventListener('click', handler, { signal: controller.signal });
+// Later: controller.abort(); // Removes all listeners""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "Interval Leak": {
+            "title": "Clear Intervals on Cleanup",
+            "rationale": "Intervals continue running even after component unmount.",
+            "snippet": """// LEAK: Interval never cleared
+useEffect(() => {
+  setInterval(pollData, 5000);
+}, []);
+
+// FIXED: Store and clear interval
+useEffect(() => {
+  const intervalId = setInterval(pollData, 5000);
+  return () => clearInterval(intervalId);
+}, []);
+
+// Class component
+componentWillUnmount() {
+  clearInterval(this.intervalId);
+}""",
+            "priority": "High",
+            "est_hours": 1
+        },
+        "Sequential Await": {
+            "title": "Parallelize Independent Async Operations",
+            "rationale": "Sequential awaits in loops are N times slower than parallel execution.",
+            "snippet": """// SLOW: Sequential (10 items = 10x time)
+for (const id of ids) {
+  const result = await fetchData(id);
+}
+
+// FAST: Parallel execution
+const results = await Promise.all(
+  ids.map(id => fetchData(id))
+);
+
+// CONTROLLED: Limit concurrency
+import pLimit from 'p-limit';
+const limit = pLimit(5); // Max 5 concurrent
+const results = await Promise.all(
+  ids.map(id => limit(() => fetchData(id)))
+);""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "Large Bundle Import": {
+            "title": "Use Tree-Shakeable Imports",
+            "rationale": "Full library imports bloat bundle size unnecessarily.",
+            "snippet": """// HEAVY: Full lodash (~70KB)
+import _ from 'lodash';
+_.debounce(fn, 300);
+
+// LIGHT: Named import (tree-shakeable)
+import { debounce } from 'lodash-es';
+debounce(fn, 300);
+
+// LIGHTEST: Individual package
+import debounce from 'lodash.debounce';
+
+// For moment.js (~290KB), use:
+import { format } from 'date-fns'; // ~2KB per function
+// or dayjs (~2KB total)""",
+            "priority": "Medium",
+            "est_hours": 1
+        },
+        
+        # ===== REACT-SPECIFIC ISSUES =====
+        "Missing Dependencies": {
+            "title": "Add Missing useEffect Dependencies",
+            "rationale": "Missing deps cause stale closures and subtle bugs.",
+            "snippet": """// BUG: Empty deps but uses external value
+useEffect(() => {
+  fetchData(userId); // userId not in deps!
+}, []);
+
+// FIXED: Include all dependencies
+useEffect(() => {
+  fetchData(userId);
+}, [userId]);
+
+// If you want it to run once, use ref
+const userIdRef = useRef(userId);
+useEffect(() => {
+  fetchData(userIdRef.current);
+}, []);""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "State Update Without Cleanup": {
+            "title": "Add Cleanup for Async State Updates",
+            "rationale": "Setting state after unmount causes memory leaks and React warnings.",
+            "snippet": """// BUG: May set state after unmount
+useEffect(() => {
+  fetchData().then(data => setData(data));
+}, []);
+
+// FIXED: Cancel on cleanup
+useEffect(() => {
+  let cancelled = false;
+  fetchData().then(data => {
+    if (!cancelled) setData(data);
+  });
+  return () => { cancelled = true; };
+}, []);
+
+// BETTER: AbortController for fetch
+useEffect(() => {
+  const controller = new AbortController();
+  fetch(url, { signal: controller.signal })
+    .then(r => r.json())
+    .then(setData);
+  return () => controller.abort();
+}, [url]);""",
+            "priority": "High",
+            "est_hours": 2
+        },
+        "Inline Object Props": {
+            "title": "Memoize Object Props",
+            "rationale": "Inline objects create new references, triggering unnecessary re-renders.",
+            "snippet": """// BAD: New object every render
+<Component style={{ color: 'red' }} />
+<Component options={{ sort: true }} />
+
+// GOOD: Define outside or useMemo
+const style = { color: 'red' };
+<Component style={style} />
+
+// GOOD: useMemo for dynamic values
+const options = useMemo(() => ({
+  sort: sortEnabled,
+  filter: filterValue
+}), [sortEnabled, filterValue]);
+<Component options={options} />""",
+            "priority": "Medium",
+            "est_hours": 2
+        },
+        "Anonymous Handlers": {
+            "title": "Use useCallback for Event Handlers",
+            "rationale": "Anonymous functions in props cause child re-renders.",
+            "snippet": """// BAD: New function every render
+<Button onClick={() => handleClick(id)} />
+
+// GOOD: useCallback
+const handleButtonClick = useCallback(() => {
+  handleClick(id);
+}, [id]);
+<Button onClick={handleButtonClick} />
+
+// GOOD: For lists, pass id as data attribute
+<Button data-id={id} onClick={handleClick} />
+// In handler: const id = e.currentTarget.dataset.id;""",
+            "priority": "Medium",
+            "est_hours": 2
+        },
+        
+        # ===== COMPLEXITY ISSUES (Priority: High) =====
         "High Complexity": {
             "title": "Reduce Cyclomatic Complexity",
             "rationale": "High complexity is a major bug predictor. Consider strategy pattern or decomposition.",

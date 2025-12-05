@@ -275,43 +275,183 @@ class PythonAnalyzer:
     @staticmethod
     def _detect_smells(tree: ast.AST, lines: List[str], path: str, 
                        functions: List[ast.AST], classes: List[ast.AST]) -> List[CodeSmell]:
-        """Detect code smells in Python code."""
+        """
+        Enterprise-grade code smell detection for Python.
+        Focuses on issues that cause real production incidents.
+        """
         smells = []
         content = '\n'.join(lines)
         loc = len(lines)
         
-        # ===== FUNCTION-LEVEL SMELLS =====
+        # ============================================================
+        # CRITICAL: SECURITY VULNERABILITIES (Severity 5)
+        # ============================================================
+        
+        # SQL Injection Detection
+        for pattern in SECURITY_PATTERNS['sql_injection']:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="SQL Injection Risk",
+                    severity=5,
+                    line=line_num,
+                    message="Potential SQL injection: user input may be directly interpolated into SQL query",
+                    suggestion="Use parameterized queries: cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))"
+                ))
+                break  # One per file
+        
+        # Hardcoded Secrets Detection
+        for pattern in SECURITY_PATTERNS['hardcoded_secrets']:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                # Get a preview without exposing the secret
+                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                key_match = re.search(r'(password|secret|key|token|api)', line_content, re.IGNORECASE)
+                key_name = key_match.group(1) if key_match else 'credential'
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Hardcoded Secret",
+                    severity=5,
+                    line=line_num,
+                    message=f"Hardcoded {key_name} detected - this will be exposed in version control",
+                    suggestion="Use environment variables: os.environ.get('SECRET_KEY') or a secrets manager"
+                ))
+                break
+        
+        # Command Injection / Code Execution
+        for pattern in SECURITY_PATTERNS['command_injection']:
+            matches = list(re.finditer(pattern, content))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                matched_text = match.group(0)[:20]
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Code Injection Risk",
+                    severity=5,
+                    line=line_num,
+                    message=f"Dangerous function '{matched_text}...' can execute arbitrary code",
+                    suggestion="Avoid eval/exec. For subprocess, use shell=False and pass args as list"
+                ))
+                break
+        
+        # ============================================================
+        # HIGH: PERFORMANCE & RELIABILITY ISSUES (Severity 4)
+        # ============================================================
+        
+        # N+1 Query Problem (common in ORMs)
+        n_plus_one_pattern = r'for\s+(\w+)\s+in\s+(\w+).*:\s*\n\s*.*\.\s*(?:objects|query|filter|get|find)'
+        for match in re.finditer(n_plus_one_pattern, content, re.MULTILINE):
+            line_num = content[:match.start()].count('\n') + 1
+            smells.append(CodeSmell(
+                path=path,
+                type="N+1 Query Problem",
+                severity=4,
+                line=line_num,
+                message="Database query inside loop causes N+1 performance issue - each iteration hits the database",
+                suggestion="Use select_related/prefetch_related (Django), joinedload (SQLAlchemy), or batch queries"
+            ))
+        
+        # Synchronous I/O in Async Context
+        async_sync_pattern = r'async\s+def\s+\w+[^:]+:\s*\n(?:.*\n)*?.*(?:requests\.|urllib\.|time\.sleep|open\()'
+        for match in re.finditer(async_sync_pattern, content, re.MULTILINE):
+            line_num = content[:match.start()].count('\n') + 1
+            smells.append(CodeSmell(
+                path=path,
+                type="Blocking Call in Async",
+                severity=4,
+                line=line_num,
+                message="Synchronous blocking call inside async function defeats concurrency benefits",
+                suggestion="Use aiohttp instead of requests, aiofiles instead of open(), asyncio.sleep instead of time.sleep"
+            ))
+        
+        # Resource Not Closed (file handles, connections)
+        resource_leak_pattern = r'(\w+)\s*=\s*open\s*\([^)]+\)(?!.*\bwith\b)(?!.*\.close\(\))'
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name) and node.func.id == 'open':
+                    # Check if it's in a with statement
+                    # This is a simplified check
+                    pass
+        
+        # Check for missing context managers
+        for i, line in enumerate(lines):
+            if 'open(' in line and 'with ' not in line and '.close()' not in content[content.find(line):content.find(line)+500]:
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Resource Leak Risk",
+                    severity=4,
+                    line=i + 1,
+                    message="File opened without 'with' statement - may not be properly closed on exception",
+                    suggestion="Use context manager: with open(filename) as f:"
+                ))
+                break
+        
+        # ============================================================
+        # HIGH: ERROR HANDLING ANTI-PATTERNS (Severity 4)
+        # ============================================================
+        
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ExceptHandler):
+                # Bare except (catches KeyboardInterrupt, SystemExit)
+                if node.type is None:
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Bare Except Clause",
+                        severity=4,
+                        line=node.lineno,
+                        message="Bare 'except:' catches KeyboardInterrupt and SystemExit, preventing graceful shutdown",
+                        suggestion="Use 'except Exception:' to catch only errors, not system signals"
+                    ))
+                
+                # Swallowed exception (pass or just logging without re-raise in critical code)
+                if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Swallowed Exception",
+                        severity=4,
+                        line=node.lineno,
+                        message="Exception silently ignored - bugs will be invisible and hard to debug",
+                        suggestion="At minimum, log the exception. Consider re-raising or handling appropriately"
+                    ))
+        
+        # ============================================================
+        # MEDIUM-HIGH: MAINTAINABILITY ISSUES (Severity 3-4)
+        # ============================================================
+        
         for func in functions:
             func_name = func.name
             func_lines = func.end_lineno - func.lineno + 1 if hasattr(func, 'end_lineno') else 50
             
-            # Long function
-            if func_lines > 50:
-                severity = 5 if func_lines > 100 else 4 if func_lines > 75 else 3
+            # High Cyclomatic Complexity (bug probability increases exponentially)
+            visitor = CyclomaticComplexityVisitor()
+            visitor.visit(func)
+            if visitor.complexity > 10:
+                severity = 5 if visitor.complexity > 25 else 4 if visitor.complexity > 15 else 3
+                smells.append(CodeSmell(
+                    path=path,
+                    type="High Cyclomatic Complexity",
+                    severity=severity,
+                    line=func.lineno,
+                    message=f"Function '{func_name}' has complexity {visitor.complexity} - research shows bug probability increases exponentially above 10",
+                    suggestion="Extract conditional logic into well-named helper functions or use strategy/state pattern"
+                ))
+            
+            # Long Function (cognitive load issue)
+            if func_lines > 60:
+                severity = 4 if func_lines > 100 else 3
                 smells.append(CodeSmell(
                     path=path,
                     type="Long Function",
                     severity=severity,
                     line=func.lineno,
-                    message=f"Function '{func_name}' has {func_lines} lines (recommended: <50)",
-                    suggestion=f"Consider breaking '{func_name}' into smaller functions"
+                    message=f"Function '{func_name}' is {func_lines} lines - exceeds working memory capacity (~7 items)",
+                    suggestion="Extract cohesive blocks into functions with descriptive names that explain intent"
                 ))
             
-            # High complexity
-            visitor = CyclomaticComplexityVisitor()
-            visitor.visit(func)
-            if visitor.complexity > 10:
-                severity = 5 if visitor.complexity > 20 else 4 if visitor.complexity > 15 else 3
-                smells.append(CodeSmell(
-                    path=path,
-                    type="High Complexity",
-                    severity=severity,
-                    line=func.lineno,
-                    message=f"Function '{func_name}' has cyclomatic complexity of {visitor.complexity} (recommended: <10)",
-                    suggestion="Reduce branching by extracting conditions into helper functions"
-                ))
-            
-            # Too many parameters
+            # Too Many Parameters (indicates missing abstraction)
             num_args = len(func.args.args) + len(func.args.posonlyargs) + len(func.args.kwonlyargs)
             if num_args > 5:
                 severity = 4 if num_args > 7 else 3
@@ -320,195 +460,69 @@ class PythonAnalyzer:
                     type="Too Many Parameters",
                     severity=severity,
                     line=func.lineno,
-                    message=f"Function '{func_name}' has {num_args} parameters (recommended: ≤5)",
-                    suggestion="Consider using a data class or dictionary to group related parameters"
-                ))
-            
-            # Missing docstring for public functions
-            if not func_name.startswith('_') and not ast.get_docstring(func):
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Missing Docstring",
-                    severity=2,
-                    line=func.lineno,
-                    message=f"Public function '{func_name}' lacks a docstring",
-                    suggestion="Add a docstring describing purpose, parameters, and return value"
+                    message=f"Function '{func_name}' has {num_args} parameters - hard to call correctly and test",
+                    suggestion="Group related params into a dataclass/NamedTuple, or split into multiple functions"
                 ))
         
-        # ===== EXCEPTION HANDLING SMELLS =====
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ExceptHandler):
-                # Bare except clause (catches everything including KeyboardInterrupt)
-                if node.type is None:
-                    smells.append(CodeSmell(
-                        path=path,
-                        type="Bare Except",
-                        severity=4,
-                        line=node.lineno,
-                        message="Bare 'except:' clause catches all exceptions including system exits",
-                        suggestion="Specify exception types: 'except Exception:' or more specific"
-                    ))
-                
-                # Check for pass-only except blocks (swallowing exceptions)
-                if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
-                    smells.append(CodeSmell(
-                        path=path,
-                        type="Swallowed Exception",
-                        severity=4,
-                        line=node.lineno,
-                        message="Exception is silently swallowed with 'pass'",
-                        suggestion="Log the exception or re-raise after handling"
-                    ))
-        
-        # ===== STRUCTURAL SMELLS =====
-        
-        # Deep nesting
-        nesting_visitor = NestingVisitor()
-        nesting_visitor.visit(tree)
-        if nesting_visitor.max_depth > 4:
-            severity = 5 if nesting_visitor.max_depth > 6 else 4 if nesting_visitor.max_depth > 5 else 3
-            smells.append(CodeSmell(
-                path=path,
-                type="Deep Nesting",
-                severity=severity,
-                line=1,
-                message=f"Maximum nesting depth is {nesting_visitor.max_depth} (recommended: ≤4)",
-                suggestion="Use early returns, guard clauses, or extract nested logic into functions"
-            ))
-        
-        # God class (too many methods or attributes)
+        # God Class Detection
         for cls in classes:
             methods = [node for node in ast.walk(cls) 
                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
             
-            # Count instance attributes
-            attrs = set()
-            for node in ast.walk(cls):
-                if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == 'self':
-                    attrs.add(node.attr)
-            
-            if len(methods) > 20:
-                severity = 4 if len(methods) > 30 else 3
+            if len(methods) > 15:
+                severity = 4 if len(methods) > 25 else 3
                 smells.append(CodeSmell(
                     path=path,
                     type="God Class",
                     severity=severity,
                     line=cls.lineno,
-                    message=f"Class '{cls.name}' has {len(methods)} methods (recommended: ≤20)",
-                    suggestion="Consider splitting into smaller, focused classes using composition"
-                ))
-            
-            if len(attrs) > 15:
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Data Clump",
-                    severity=3,
-                    line=cls.lineno,
-                    message=f"Class '{cls.name}' has {len(attrs)} attributes (recommended: ≤15)",
-                    suggestion="Group related attributes into separate data classes"
+                    message=f"Class '{cls.name}' has {len(methods)} methods - violates Single Responsibility Principle",
+                    suggestion="Identify different responsibilities and extract into focused collaborating classes"
                 ))
         
-        # ===== MAGIC VALUES AND CONSTANTS =====
-        
-        # Magic numbers (large numeric literals not in obvious patterns)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-                val = node.value
-                # Skip common values like 0, 1, 2, -1, 100, etc.
-                if isinstance(val, int) and abs(val) > 100 and val not in {1000, 10000, 100000}:
-                    line_content = lines[node.lineno - 1] if node.lineno <= len(lines) else ''
-                    # Skip if it's in a constant assignment
-                    if not re.search(r'^[A-Z_]+\s*=', line_content.strip()):
-                        smells.append(CodeSmell(
-                            path=path,
-                            type="Magic Number",
-                            severity=3,
-                            line=node.lineno,
-                            message=f"Magic number {val} found - consider using a named constant",
-                            suggestion="Extract to a named constant: MY_CONSTANT = " + str(val)
-                        ))
-                        break  # Only report once per file
-        
-        # ===== CODE MAINTENANCE SMELLS =====
-        
-        # TODO/FIXME/HACK comments
-        todo_count = 0
-        first_todo_line = None
-        for i, line in enumerate(lines, 1):
-            if re.search(r'#\s*(TODO|FIXME|HACK|XXX):', line, re.IGNORECASE):
-                todo_count += 1
-                if first_todo_line is None:
-                    first_todo_line = i
-        
-        if todo_count > 0:
+        # Deep Nesting (cognitive complexity)
+        nesting_visitor = NestingVisitor()
+        nesting_visitor.visit(tree)
+        if nesting_visitor.max_depth > 4:
+            severity = 4 if nesting_visitor.max_depth > 5 else 3
             smells.append(CodeSmell(
                 path=path,
-                type="Unresolved TODOs",
-                severity=2 if todo_count < 5 else 3,
-                line=first_todo_line or 1,
-                message=f"Found {todo_count} unresolved TODO/FIXME comments",
-                suggestion="Review and address or create tickets for tracking"
-            ))
-        
-        # Commented out code (lines starting with # followed by code-like patterns)
-        commented_code_count = 0
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith('#') and not stripped.startswith('# '):
-                # Check if it looks like commented code
-                after_hash = stripped[1:].strip()
-                if re.match(r'^(def |class |import |from |if |for |while |return |self\.)', after_hash):
-                    commented_code_count += 1
-        
-        if commented_code_count >= 3:
-            smells.append(CodeSmell(
-                path=path,
-                type="Commented Code",
-                severity=2,
-                line=1,
-                message=f"Found {commented_code_count} lines of commented-out code",
-                suggestion="Remove dead code - use version control for history"
-            ))
-        
-        # Debug print statements
-        print_count = sum(1 for line in lines if re.search(r'\bprint\s*\(', line) and 
-                         not line.strip().startswith('#'))
-        if print_count > 5:
-            smells.append(CodeSmell(
-                path=path,
-                type="Debug Code",
-                severity=2,
-                line=1,
-                message=f"Found {print_count} print statements - likely debug code",
-                suggestion="Use logging module instead of print for production code"
-            ))
-        
-        # ===== IMPORT SMELLS =====
-        
-        # Star imports
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and any(alias.name == '*' for alias in node.names):
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Star Import",
-                    severity=3,
-                    line=node.lineno,
-                    message=f"Star import from '{node.module}' pollutes namespace",
-                    suggestion="Import specific names instead of using 'from module import *'"
-                ))
-        
-        # ===== FILE-LEVEL SMELLS =====
-        
-        # Very long file (only flag if truly excessive)
-        if loc > 500:
-            severity = 3 if loc > 800 else 2
-            smells.append(CodeSmell(
-                path=path,
-                type="Long File",
+                type="Deep Nesting",
                 severity=severity,
                 line=1,
-                message=f"File has {loc} lines (recommended: <500)",
-                suggestion="Consider splitting into multiple modules by responsibility"
+                message=f"Nesting depth {nesting_visitor.max_depth} exceeds cognitive limit - hard to understand control flow",
+                suggestion="Use guard clauses (early returns), extract nested blocks to functions, or flatten with helper methods"
+            ))
+        
+        # ============================================================
+        # MEDIUM: CODE QUALITY ISSUES (Severity 2-3)
+        # ============================================================
+        
+        # Mutable Default Arguments (common Python gotcha)
+        for func in functions:
+            for default in func.args.defaults + func.args.kw_defaults:
+                if default and isinstance(default, (ast.List, ast.Dict, ast.Set)):
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Mutable Default Argument",
+                        severity=3,
+                        line=func.lineno,
+                        message=f"Mutable default in '{func.name}' - shared across calls causing subtle bugs",
+                        suggestion="Use None as default and create new object: def foo(items=None): items = items or []"
+                    ))
+                    break
+        
+        # Global Variable Mutation
+        global_pattern = r'^\s*global\s+\w+'
+        global_matches = list(re.finditer(global_pattern, content, re.MULTILINE))
+        if len(global_matches) > 2:
+            smells.append(CodeSmell(
+                path=path,
+                type="Excessive Global State",
+                severity=3,
+                line=global_matches[0].start(),
+                message=f"Found {len(global_matches)} global variable mutations - makes testing and reasoning difficult",
+                suggestion="Pass dependencies explicitly, use dependency injection, or encapsulate in a class"
             ))
         
         return smells
@@ -579,49 +593,299 @@ class JavaScriptAnalyzer:
     
     @staticmethod
     def _detect_smells(content: str, lines: List[str], path: str) -> List[CodeSmell]:
-        """Detect code smells in JavaScript/TypeScript."""
+        """Detect enterprise-grade code smells in JavaScript/TypeScript."""
         smells = []
         loc = len(lines)
         
-        # ===== HIGH SEVERITY ISSUES (4-5) =====
+        # ===== CRITICAL SECURITY VULNERABILITIES (Severity 5) =====
         
-        # Deeply nested callbacks - track actual brace nesting within callback patterns
+        # XSS via innerHTML/dangerouslySetInnerHTML
+        xss_patterns = [
+            (r'\.innerHTML\s*=', "Direct innerHTML assignment - XSS vulnerability"),
+            (r'dangerouslySetInnerHTML\s*=', "dangerouslySetInnerHTML usage - XSS risk"),
+            (r'document\.write\s*\(', "document.write usage - XSS and performance issues"),
+            (r'eval\s*\(', "eval() usage - code injection vulnerability"),
+            (r'new\s+Function\s*\(', "new Function() - similar risks to eval()"),
+        ]
+        
+        for pattern, msg in xss_patterns:
+            matches = list(re.finditer(pattern, content))
+            if matches:
+                for match in matches[:2]:  # Report up to 2 instances
+                    line_num = content[:match.start()].count('\n') + 1
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="XSS Vulnerability",
+                        severity=5,
+                        line=line_num,
+                        message=msg,
+                        suggestion="Use textContent instead of innerHTML, or sanitize HTML with DOMPurify"
+                    ))
+        
+        # SQL Injection (raw query building)
+        sql_patterns = [
+            (r'query\s*\(\s*[`"\'].*?\$\{', "SQL query with template literal interpolation"),
+            (r'execute\s*\(\s*[`"\'].*?\+', "SQL execute with string concatenation"),
+            (r'\.raw\s*\(\s*[`"\'].*?\$\{', "Raw SQL query with interpolation"),
+        ]
+        
+        for pattern, msg in sql_patterns:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE | re.DOTALL))
+            if matches:
+                line_num = content[:matches[0].start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="SQL Injection Risk",
+                    severity=5,
+                    line=line_num,
+                    message=msg,
+                    suggestion="Use parameterized queries or prepared statements"
+                ))
+        
+        # Hardcoded Secrets/Credentials
+        secret_patterns = [
+            (r'(?:api[_-]?key|apikey)\s*[:=]\s*["\'][a-zA-Z0-9_\-]{20,}["\']', "Hardcoded API key"),
+            (r'(?:password|passwd|pwd)\s*[:=]\s*["\'][^"\']+["\']', "Hardcoded password"),
+            (r'(?:secret|token)\s*[:=]\s*["\'][a-zA-Z0-9_\-]{15,}["\']', "Hardcoded secret/token"),
+            (r'Bearer\s+[a-zA-Z0-9_\-\.]+', "Hardcoded Bearer token"),
+            (r'(?:aws_access_key_id|aws_secret)\s*[:=]', "Hardcoded AWS credentials"),
+            (r'-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----', "Private key in code"),
+        ]
+        
+        for pattern, msg in secret_patterns:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            if matches:
+                line_num = content[:matches[0].start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Hardcoded Credentials",
+                    severity=5,
+                    line=line_num,
+                    message=msg,
+                    suggestion="Use environment variables, secrets manager, or .env files (gitignored)"
+                ))
+        
+        # Insecure HTTP usage
+        http_insecure = re.findall(r'["\']http://(?!localhost|127\.0\.0\.1)[^"\']+["\']', content)
+        if http_insecure:
+            smells.append(CodeSmell(
+                path=path,
+                type="Insecure HTTP",
+                severity=4,
+                line=1,
+                message=f"Found {len(http_insecure)} insecure HTTP URLs (non-localhost)",
+                suggestion="Use HTTPS for all external URLs"
+            ))
+        
+        # ===== PERFORMANCE ISSUES (Severity 4-5) =====
+        
+        # Sync operations in browser/Node
+        sync_patterns = [
+            (r'fs\.(?:readFileSync|writeFileSync|appendFileSync)', "Synchronous file I/O blocks event loop"),
+            (r'execSync\s*\(', "Synchronous exec blocks event loop"),
+            (r'spawnSync\s*\(', "Synchronous spawn blocks event loop"),
+        ]
+        
+        for pattern, msg in sync_patterns:
+            matches = list(re.finditer(pattern, content))
+            if matches:
+                line_num = content[:matches[0].start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Blocking I/O",
+                    severity=4,
+                    line=line_num,
+                    message=msg,
+                    suggestion="Use async versions: readFile, writeFile, exec, spawn"
+                ))
+        
+        # N+1 Query Pattern (fetching in loops)
+        loop_fetch_pattern = r'(?:for|while|\.forEach|\.map)\s*\([^)]*\)\s*(?:\{[^}]*|=>[^}]*?)(?:fetch|axios|\.get|\.post|\.query|\.findOne|\.find)\s*\('
+        if re.search(loop_fetch_pattern, content, re.DOTALL):
+            smells.append(CodeSmell(
+                path=path,
+                type="N+1 Query Pattern",
+                severity=5,
+                line=1,
+                message="Database/API call inside loop - N+1 performance problem",
+                suggestion="Batch queries using Promise.all(), or fetch all data before the loop"
+            ))
+        
+        # Memory Leak: Unbounded array growth
+        unbounded_push = re.findall(r'(?:while\s*\(true\)|setInterval)\s*(?:\{[^}]*|[^{]*)\.push\s*\(', content, re.DOTALL)
+        if unbounded_push:
+            smells.append(CodeSmell(
+                path=path,
+                type="Memory Leak Risk",
+                severity=5,
+                line=1,
+                message="Unbounded array growth in infinite loop/interval",
+                suggestion="Limit array size or use circular buffer pattern"
+            ))
+        
+        # Missing cleanup for intervals/timeouts
+        set_interval = len(re.findall(r'setInterval\s*\(', content))
+        clear_interval = len(re.findall(r'clearInterval\s*\(', content))
+        if set_interval > clear_interval + 1:
+            smells.append(CodeSmell(
+                path=path,
+                type="Interval Leak",
+                severity=4,
+                line=1,
+                message=f"Found {set_interval} setInterval but only {clear_interval} clearInterval",
+                suggestion="Store interval ID and clear in cleanup (useEffect return, componentWillUnmount)"
+            ))
+        
+        # Event listener leaks
+        add_listeners = len(re.findall(r'addEventListener\s*\(', content))
+        remove_listeners = len(re.findall(r'removeEventListener\s*\(', content))
+        if add_listeners > remove_listeners + 2:
+            smells.append(CodeSmell(
+                path=path,
+                type="Event Listener Leak",
+                severity=4,
+                line=1,
+                message=f"Found {add_listeners} addEventListener but only {remove_listeners} removeEventListener",
+                suggestion="Clean up listeners in useEffect cleanup or componentWillUnmount"
+            ))
+        
+        # Large bundle imports
+        large_imports = [
+            (r'import\s+\w+\s+from\s+["\']lodash["\']', "Full lodash import (~70KB)"),
+            (r'import\s+\w+\s+from\s+["\']moment["\']', "moment.js import (~290KB) - use date-fns or dayjs"),
+            (r'import\s+\*\s+as\s+\w+\s+from', "Namespace import prevents tree-shaking"),
+        ]
+        
+        for pattern, msg in large_imports:
+            matches = list(re.finditer(pattern, content))
+            if matches:
+                line_num = content[:matches[0].start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Large Bundle Import",
+                    severity=3,
+                    line=line_num,
+                    message=msg,
+                    suggestion="Use named imports: import { specific } from 'library'"
+                ))
+        
+        # ===== REACT-SPECIFIC ISSUES =====
+        
+        if '.jsx' in path or '.tsx' in path or 'react' in content.lower():
+            # useEffect missing dependencies
+            use_effect_pattern = r'useEffect\s*\(\s*\(\)\s*=>\s*{[^}]*}\s*,\s*\[\s*\]\s*\)'
+            effects_with_empty_deps = re.findall(use_effect_pattern, content, re.DOTALL)
+            for effect in effects_with_empty_deps:
+                if re.search(r'\b(?:props\.|state\.|\w+(?:State|Props))\b', effect):
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Missing Dependencies",
+                        severity=4,
+                        line=1,
+                        message="useEffect with empty deps array uses external variables",
+                        suggestion="Add used variables to dependency array or use useCallback"
+                    ))
+                    break
+            
+            # State updates without cleanup
+            if re.search(r'useEffect\s*\(\s*\(\)\s*=>\s*{[^}]*set\w+\s*\([^}]*}\s*,', content) and \
+               not re.search(r'return\s*\(\s*\)\s*=>', content):
+                smells.append(CodeSmell(
+                    path=path,
+                    type="State Update Without Cleanup",
+                    severity=4,
+                    line=1,
+                    message="useEffect sets state but has no cleanup - may cause memory leak",
+                    suggestion="Return cleanup function: return () => { /* cleanup */ }"
+                ))
+            
+            # Inline object/array creation in JSX props
+            inline_objects = len(re.findall(r'(?:style|className|options)=\{\{[^}]+\}\}', content))
+            if inline_objects > 5:
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Inline Object Props",
+                    severity=3,
+                    line=1,
+                    message=f"Found {inline_objects} inline object/array props - causes re-renders",
+                    suggestion="Move objects outside component or use useMemo"
+                ))
+            
+            # Anonymous functions in JSX
+            anon_handlers = len(re.findall(r'on\w+=\{(?:\([^)]*\)\s*=>|\(\s*\)\s*=>|function\s*\()', content))
+            if anon_handlers > 5:
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Anonymous Handlers",
+                    severity=3,
+                    line=1,
+                    message=f"Found {anon_handlers} anonymous functions in event handlers",
+                    suggestion="Use useCallback for event handlers to prevent unnecessary re-renders"
+                ))
+        
+        # ===== ASYNC/AWAIT ISSUES =====
+        
+        # Unhandled promise rejections
+        async_without_catch = len(re.findall(r'(?:async\s+function|\basync\s*\([^)]*\)\s*=>)[^}]*await\s+[^}]*}', content, re.DOTALL))
+        try_catch_count = len(re.findall(r'try\s*{', content))
+        catch_count = len(re.findall(r'\.catch\s*\(', content))
+        
+        if async_without_catch > 0 and (try_catch_count + catch_count) < async_without_catch:
+            smells.append(CodeSmell(
+                path=path,
+                type="Unhandled Promise Rejection",
+                severity=4,
+                line=1,
+                message="Async functions without proper error handling",
+                suggestion="Wrap await calls in try-catch or add .catch() handlers"
+            ))
+        
+        # Await in loop (sequential instead of parallel)
+        await_in_loop = re.search(r'(?:for|while)\s*\([^)]*\)\s*{[^}]*await\s+', content, re.DOTALL)
+        if await_in_loop and 'Promise.all' not in content:
+            smells.append(CodeSmell(
+                path=path,
+                type="Sequential Await",
+                severity=4,
+                line=1,
+                message="Await inside loop executes sequentially instead of in parallel",
+                suggestion="Use Promise.all() with map to parallelize: await Promise.all(items.map(async i => ...))"
+            ))
+        
+        # ===== CODE QUALITY ISSUES =====
+        
+        # Deeply nested callbacks
         max_callback_depth = 0
         current_callback_depth = 0
-        in_callback = False
         
         for line in lines:
-            stripped = line.strip()
-            # Detect callback pattern starts
             callback_starts = len(re.findall(r'function\s*\([^)]*\)\s*{|=>\s*{|\(\s*\([^)]*\)\s*=>\s*{', line))
-            callback_ends = stripped.count('});') + stripped.count('})')
+            callback_ends = line.count('});') + line.count('})')
             
             current_callback_depth += callback_starts
             current_callback_depth = max(0, current_callback_depth - callback_ends)
             max_callback_depth = max(max_callback_depth, current_callback_depth)
         
-        # Only report if genuinely deep (4+ levels is unusual)
         if max_callback_depth >= 4:
             smells.append(CodeSmell(
                 path=path,
                 type="Callback Hell",
-                severity=5 if max_callback_depth >= 6 else 4,
+                severity=4,
                 line=1,
-                message=f"Deep callback nesting detected (depth: {max_callback_depth})",
-                suggestion="Refactor using async/await or Promises to flatten callback structure"
+                message=f"Deep callback nesting (depth: {max_callback_depth})",
+                suggestion="Refactor using async/await or Promises to flatten structure"
             ))
         
-        # Large functions - find function boundaries more accurately
+        # Long functions
         func_pattern = re.compile(
-            r'(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|(?:async\s+)?(\w+)\s*\([^)]*\)\s*{)',
+            r'(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>)',
             re.MULTILINE
         )
         
         for match in func_pattern.finditer(content):
-            func_name = match.group(1) or match.group(2) or match.group(3) or 'anonymous'
+            func_name = match.group(1) or match.group(2) or 'anonymous'
             start_pos = match.end()
             
-            # Find matching closing brace
             brace_count = 1
             end_pos = start_pos
             for i, char in enumerate(content[start_pos:], start_pos):
@@ -640,39 +904,11 @@ class JavaScriptAnalyzer:
                 smells.append(CodeSmell(
                     path=path,
                     type="Long Function",
-                    severity=5 if func_lines > 150 else 4,
+                    severity=4,
                     line=line_num,
-                    message=f"Function '{func_name}' has approximately {func_lines} lines (recommended: <50)",
-                    suggestion="Break down into smaller, single-responsibility functions"
+                    message=f"Function '{func_name}' has ~{func_lines} lines",
+                    suggestion="Break into smaller functions with single responsibility"
                 ))
-        
-        # Complex ternary expressions (nested ternaries)
-        nested_ternary_count = len(re.findall(r'\?[^?:]+\?', content))
-        if nested_ternary_count > 0:
-            smells.append(CodeSmell(
-                path=path,
-                type="Nested Ternary",
-                severity=4,
-                line=1,
-                message=f"Found {nested_ternary_count} nested ternary expression(s)",
-                suggestion="Replace nested ternaries with if-else statements or helper functions"
-            ))
-        
-        # Magic numbers - look for large numeric literals not in obvious constant patterns
-        magic_numbers = re.findall(r'(?<!["\'\w])(?:[2-9]\d{2,}|1\d{3,})(?!["\'\w])', content)
-        # Filter out common values like array indices, pixel values, etc.
-        significant_magic = [n for n in magic_numbers if int(n) not in {100, 200, 300, 400, 500, 1000, 2000}]
-        if len(significant_magic) > 5:
-            smells.append(CodeSmell(
-                path=path,
-                type="Magic Numbers",
-                severity=3,
-                line=1,
-                message=f"Found {len(significant_magic)} potential magic numbers",
-                suggestion="Extract magic numbers to named constants for better readability"
-            ))
-        
-        # ===== MEDIUM SEVERITY ISSUES (3) =====
         
         # Empty catch blocks
         empty_catch = re.findall(r'catch\s*\([^)]*\)\s*{\s*}', content)
@@ -683,97 +919,57 @@ class JavaScriptAnalyzer:
                 severity=4,
                 line=1,
                 message=f"Found {len(empty_catch)} empty catch blocks",
-                suggestion="Handle errors properly or log them for debugging"
+                suggestion="Log errors or handle them appropriately"
             ))
         
-        # Potential memory leaks (event listeners without cleanup)
-        add_listeners = len(re.findall(r'addEventListener\s*\(', content))
-        remove_listeners = len(re.findall(r'removeEventListener\s*\(', content))
-        if add_listeners > remove_listeners + 2:
-            smells.append(CodeSmell(
-                path=path,
-                type="Potential Memory Leak",
-                severity=4,
-                line=1,
-                message=f"Found {add_listeners} addEventListener calls but only {remove_listeners} removeEventListener",
-                suggestion="Ensure all event listeners are properly cleaned up in useEffect cleanup or componentWillUnmount"
-            ))
-        
-        # Duplicate string literals
-        string_literals = re.findall(r'["\']([^"\']{10,})["\']', content)
-        from collections import Counter
-        string_counts = Counter(string_literals)
-        duplicates = [(s, c) for s, c in string_counts.items() if c >= 3]
-        if duplicates:
-            smells.append(CodeSmell(
-                path=path,
-                type="Duplicate Strings",
-                severity=3,
-                line=1,
-                message=f"Found {len(duplicates)} string literals repeated 3+ times",
-                suggestion="Extract repeated strings to constants"
-            ))
-        
-        # Excessive use of any type (TypeScript)
+        # TypeScript 'any' abuse
         if path.endswith('.ts') or path.endswith('.tsx'):
             any_count = len(re.findall(r':\s*any\b', content))
-            if any_count > 3:
+            if any_count > 5:
                 smells.append(CodeSmell(
                     path=path,
-                    type="Excessive Any Type",
-                    severity=3,
+                    type="Excessive Any Types",
+                    severity=4,
                     line=1,
-                    message=f"Found {any_count} uses of 'any' type",
-                    suggestion="Replace 'any' with proper type definitions for type safety"
+                    message=f"Found {any_count} uses of 'any' type - defeats TypeScript benefits",
+                    suggestion="Define proper interfaces/types or use 'unknown' for truly unknown types"
                 ))
         
-        # Commented out code
-        commented_code = len(re.findall(r'//\s*(const|let|var|function|if|for|while|return)\s+', content))
-        if commented_code > 5:
+        # ===== MAINTENANCE ISSUES =====
+        
+        # Console statements
+        console_matches = len(re.findall(r'console\.(log|warn|error|debug|info)', content))
+        if console_matches > 5:
             smells.append(CodeSmell(
                 path=path,
-                type="Commented Code",
+                type="Debug Statements",
                 severity=2,
                 line=1,
-                message=f"Found approximately {commented_code} lines of commented-out code",
-                suggestion="Remove commented code - use version control for history"
-            ))
-        
-        # ===== LOW SEVERITY ISSUES (1-2) =====
-        
-        # Console.log statements (likely debug code)
-        console_matches = list(re.finditer(r'console\.(log|warn|error|debug|info)', content))
-        if len(console_matches) > 3:
-            smells.append(CodeSmell(
-                path=path,
-                type="Debug Code",
-                severity=2,
-                line=1,
-                message=f"Found {len(console_matches)} console statements",
+                message=f"Found {console_matches} console statements",
                 suggestion="Remove debug statements or use proper logging library"
             ))
         
-        # TODO/FIXME comments - only add once per file with count
-        todo_matches = list(re.finditer(r'(TODO|FIXME|HACK|XXX|BUG)', content, re.IGNORECASE))
-        if todo_matches:
+        # TODO/FIXME
+        todo_matches = len(re.findall(r'(TODO|FIXME|HACK|XXX|BUG)', content, re.IGNORECASE))
+        if todo_matches > 0:
             smells.append(CodeSmell(
                 path=path,
                 type="Unresolved TODOs",
                 severity=2,
                 line=1,
-                message=f"Found {len(todo_matches)} TODO/FIXME comments",
-                suggestion="Address or create tickets for unresolved TODOs"
+                message=f"Found {todo_matches} TODO/FIXME comments",
+                suggestion="Address or create tickets for tracking"
             ))
         
-        # Long file (only flag if really long)
-        if len(lines) > 500:
+        # Long file
+        if loc > 500:
             smells.append(CodeSmell(
                 path=path,
-                type="Very Long File",
-                severity=3 if len(lines) > 800 else 2,
+                type="Long File",
+                severity=3 if loc > 800 else 2,
                 line=1,
-                message=f"File has {len(lines)} lines (recommended: <400)",
-                suggestion="Consider splitting into multiple modules by responsibility"
+                message=f"File has {loc} lines",
+                suggestion="Split into multiple modules by responsibility"
             ))
         
         return smells
