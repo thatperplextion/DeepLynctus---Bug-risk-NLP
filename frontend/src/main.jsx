@@ -35,32 +35,26 @@ function App(){
   }
 
   return (
-    <div className="min-h-screen p-6 md:p-10">
-      {/* Floating orbs background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
-
-      {/* Header */}
+    <div className="min-h-screen p-4 md:p-8 lg:p-10 max-w-7xl mx-auto">
+      {/* Header - Clean GitHub/ChatGPT style */}
       <motion.header
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-8"
+        transition={{ duration: 0.3 }}
+        className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--border-subtle)]"
       >
         <div className="flex items-center gap-3">
           <div 
             onClick={() => { setCurrentPage('overview'); setSelectedFile(null); }}
-            className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 via-cyan-500 to-sky-500 flex items-center justify-center text-xl shadow-lg glow cursor-pointer hover:scale-110 transition-transform"
+            className="w-9 h-9 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center text-lg cursor-pointer hover:opacity-90 transition-opacity"
           >
             🧠
           </div>
-          <span className="text-xl font-bold gradient-text">CodeSenseX</span>
+          <span className="text-lg font-semibold text-[var(--text-primary)]">CodeSenseX</span>
         </div>
 
-        {/* Navigation - Optimized for performance */}
-        <nav className="hidden md:flex items-center gap-2 nav-glass-container rounded-full px-4 py-2.5">
+        {/* Navigation - Clean pill style */}
+        <nav className="hidden md:flex items-center gap-1 nav-glass-container rounded-lg px-1 py-1">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -69,7 +63,7 @@ function App(){
                 currentPage === item.id ? 'active' : ''
               }`}
             >
-              <span className="nav-icon mr-2">{item.icon}</span>
+              <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}

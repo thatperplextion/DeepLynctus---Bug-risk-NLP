@@ -170,24 +170,25 @@ export default function Overview({ projectId: parentProjectId, onFileSelect, onP
   const qualityScore = Math.max(0, 100 - (summary.avg_risk || 0))
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
+    <div className="space-y-6">
+      {/* Hero Section - Clean & Focused */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center py-8"
+        transition={{ duration: 0.3 }}
+        className="text-center py-6"
       >
-        <h1 className="text-5xl md:text-6xl font-black gradient-text glow-text mb-4">
-          CodeSenseX
+        <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-3">
+          Code<span className="text-[var(--accent-primary)]">Sense</span>X
         </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+        <p className="text-[var(--text-secondary)] text-base max-w-xl mx-auto">
           Intelligent Code Quality & Bug Risk Analyzer powered by AI + NLP
         </p>
       </motion.div>
 
-      {/* Input Section */}
-      <GlassCard className="max-w-4xl mx-auto" delay={0.1}>
-        <div className="flex flex-col md:flex-row gap-4">
+      {/* Input Section - Clean card */}
+      <GlassCard className="max-w-3xl mx-auto" delay={0.1}>
+        <div className="flex flex-col md:flex-row gap-3">
           <GlassInput
             value={sourceRef}
             onChange={e => setSourceRef(e.target.value)}
@@ -195,61 +196,60 @@ export default function Overview({ projectId: parentProjectId, onFileSelect, onP
             className="flex-1"
             icon="🔗"
           />
-          <div className="flex gap-3">
-            <GradientButton onClick={queueAndScan} size="md" className="scan-btn-premium">
-              <span className="rocket-icon">🚀</span> Scan Repository
+          <div className="flex gap-2">
+            <GradientButton onClick={queueAndScan} size="md">
+              🚀 Scan Repository
             </GradientButton>
             {scanned && (
               <GradientButton onClick={() => loadData(projectId)} variant="secondary" size="md">
-                <span className="refresh-icon">🔄</span> Refresh
+                🔄 Refresh
               </GradientButton>
             )}
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-4 text-sm text-gray-400 flex-wrap">
-          {projectId && <span>Project ID: <code className="text-cyan-400 px-2 py-0.5 rounded bg-cyan-400/10">{projectId}</code></span>}
-          {scanned && <span className="text-emerald-400 flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Scanned</span>}
-          {scanStatus && <span className="text-yellow-400 animate-pulse">{scanStatus}</span>}
+        <div className="mt-3 flex items-center gap-4 text-sm text-[var(--text-secondary)] flex-wrap">
+          {projectId && <span>Project: <code className="text-[var(--accent-tertiary)] px-2 py-0.5 rounded-md bg-[var(--accent-primary)]/10 font-mono text-xs">{projectId}</code></span>}
+          {scanned && <span className="text-[var(--accent-primary)] flex items-center gap-1.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]"></span> Scanned</span>}
+          {scanStatus && <span className="text-amber-400">{scanStatus}</span>}
           {hasPreviousScan && !scanned && (
             <button 
               onClick={loadPreviousScan}
-              className="previous-scan-link group flex items-center gap-2"
+              className="text-[var(--accent-primary)] hover:text-[var(--accent-tertiary)] transition-colors flex items-center gap-1.5 text-sm"
             >
-              <span className="inline-block transition-transform group-hover:-translate-x-1">←</span>
-              <span className="relative">
-                Load previous scan results
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-400 to-teal-400 transition-all duration-300 group-hover:w-full"></span>
-              </span>
+              ← Load previous scan results
             </button>
           )}
         </div>
       </GlassCard>
 
       {loading && (
-        <div className="text-center py-8">
+        <div className="text-center py-12">
           <Loader />
-          {scanStatus && <p className="mt-4 text-gray-400">{scanStatus}</p>}
+          {scanStatus && <p className="mt-4 text-[var(--text-secondary)]">{scanStatus}</p>}
         </div>
       )}
 
-      {/* Empty State - Show when no scan has been done */}
+      {/* Empty State - Clean & focused */}
       {!scanned && !loading && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
+          transition={{ duration: 0.3 }}
+          className="text-center py-20"
         >
-          <div className="text-6xl mb-6">🔍</div>
-          <h3 className="text-2xl font-bold text-gray-300 mb-2">No Repository Scanned</h3>
-          <p className="text-gray-500 max-w-md mx-auto mb-6">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] flex items-center justify-center text-3xl">
+            🔍
+          </div>
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">No Repository Scanned</h3>
+          <p className="text-[var(--text-secondary)] max-w-md mx-auto mb-8 text-sm">
             Enter a GitHub repository URL above and click "Scan Repository" to analyze code quality, detect bugs, and get AI-powered refactoring suggestions.
           </p>
           <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-gray-600">Supported formats:</p>
-            <div className="flex flex-wrap justify-center gap-2 text-xs">
-              <code className="glass px-3 py-1 rounded-full text-gray-400">https://github.com/user/repo</code>
-              <code className="glass px-3 py-1 rounded-full text-gray-400">github.com/user/repo</code>
-              <code className="glass px-3 py-1 rounded-full text-gray-400">user/repo</code>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Supported formats</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <code className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-mono">https://github.com/user/repo</code>
+              <code className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-mono">github.com/user/repo</code>
+              <code className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-mono">user/repo</code>
             </div>
           </div>
         </motion.div>
@@ -261,10 +261,10 @@ export default function Overview({ projectId: parentProjectId, onFileSelect, onP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-8"
+            className="space-y-6"
           >
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard label="Quality Score" value={`${qualityScore}%`} icon="⭐" color="purple" delay={0.1} />
               <StatCard label="Files Analyzed" value={metrics.length} icon="📁" color="blue" delay={0.2} />
               <StatCard label="Critical Issues" value={summary.critical} icon="🔥" color="red" delay={0.3} />

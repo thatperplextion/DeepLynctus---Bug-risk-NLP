@@ -89,31 +89,41 @@ export function GlassInput({ value, onChange, placeholder, className = '', icon 
 
 export function StatCard({ label, value, icon, trend, color = 'purple', delay = 0 }) {
   const colors = {
-    purple: 'from-teal-500 to-cyan-500',
-    pink: 'from-pink-500 to-rose-500',
-    blue: 'from-sky-500 to-blue-500',
-    green: 'from-emerald-500 to-teal-500',
-    orange: 'from-orange-500 to-amber-500',
-    red: 'from-red-500 to-rose-500'
+    purple: 'bg-[var(--accent-primary)]',
+    pink: 'bg-pink-500',
+    blue: 'bg-blue-500',
+    green: 'bg-emerald-500',
+    orange: 'bg-orange-500',
+    red: 'bg-red-500'
   }
+  
+  const textColors = {
+    purple: 'text-[var(--accent-tertiary)]',
+    pink: 'text-pink-400',
+    blue: 'text-blue-400',
+    green: 'text-emerald-400',
+    orange: 'text-orange-400',
+    red: 'text-red-400'
+  }
+  
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay }}
-      className="glass rounded-2xl p-6 glass-hover"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="glass rounded-xl p-5 glass-hover"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm font-medium">{label}</p>
-          <p className={`text-3xl font-bold mt-1 bg-gradient-to-r ${colors[color]} bg-clip-text text-transparent`}>{value}</p>
+          <p className="text-[var(--text-secondary)] text-sm font-medium">{label}</p>
+          <p className={`text-2xl font-bold mt-1 ${textColors[color]}`}>{value}</p>
           {trend && (
-            <p className={`text-sm mt-1 ${trend > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`text-xs mt-1 ${trend > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
             </p>
           )}
         </div>
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center text-2xl shadow-lg`}>
+        <div className={`w-12 h-12 rounded-xl ${colors[color]} flex items-center justify-center text-xl`}>
           {icon}
         </div>
       </div>
@@ -123,19 +133,19 @@ export function StatCard({ label, value, icon, trend, color = 'purple', delay = 
 
 export function RiskBadge({ tier }) {
   const styles = {
-    Critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-    High: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    Medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    Low: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+    Critical: 'bg-red-500/15 text-red-400 border-red-500/25',
+    High: 'bg-orange-500/15 text-orange-400 border-orange-500/25',
+    Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+    Low: 'bg-[var(--accent-primary)]/15 text-[var(--accent-tertiary)] border-[var(--accent-primary)]/25'
   }
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[tier] || styles.Low}`}>
+    <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${styles[tier] || styles.Low}`}>
       {tier}
     </span>
   )
 }
 
-export function ProgressRing({ value, size = 120, strokeWidth = 10, color = '#8b5cf6' }) {
+export function ProgressRing({ value, size = 100, strokeWidth = 8, color = 'var(--accent-primary)' }) {
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
   const offset = circumference - (value / 100) * circumference
@@ -147,14 +157,14 @@ export function ProgressRing({ value, size = 120, strokeWidth = 10, color = '#8b
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(255,255,255,0.1)"
+          stroke="var(--border-subtle)"
           strokeWidth={strokeWidth}
           fill="none"
         />
         <motion.circle
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -163,11 +173,10 @@ export function ProgressRing({ value, size = 120, strokeWidth = 10, color = '#8b
           fill="none"
           strokeDasharray={circumference}
           strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 10px ${color})` }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold">{value}</span>
+        <span className="text-xl font-semibold text-[var(--text-primary)]">{value}</span>
       </div>
     </div>
   )
@@ -175,11 +184,11 @@ export function ProgressRing({ value, size = 120, strokeWidth = 10, color = '#8b
 
 export function Loader() {
   return (
-    <div className="flex items-center justify-center py-12">
+    <div className="flex items-center justify-center py-8">
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full"
+        transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+        className="w-8 h-8 border-2 border-[var(--border-default)] border-t-[var(--accent-primary)] rounded-full"
       />
     </div>
   )

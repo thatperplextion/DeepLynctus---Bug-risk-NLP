@@ -439,16 +439,20 @@ class PythonAnalyzer:
                     suggestion="Extract conditional logic into well-named helper functions or use strategy/state pattern"
                 ))
             
-            # Long Function (cognitive load issue)
-            if func_lines > 60:
-                severity = 4 if func_lines > 100 else 3
+            # Long Function - only flag EXTREMELY long functions (200+ lines is unusual)
+            # Skip test files, config files, and generated code
+            is_test_file = any(x in path.lower() for x in ['test', 'spec', 'mock', '__pycache__'])
+            is_config_file = any(x in path.lower() for x in ['config', 'setting', 'migration'])
+            
+            if func_lines > 200 and not is_test_file and not is_config_file:
+                severity = 2  # Low severity - just informational
                 smells.append(CodeSmell(
                     path=path,
                     type="Long Function",
                     severity=severity,
                     line=func.lineno,
-                    message=f"Function '{func_name}' is {func_lines} lines - exceeds working memory capacity (~7 items)",
-                    suggestion="Extract cohesive blocks into functions with descriptive names that explain intent"
+                    message=f"Function '{func_name}' is {func_lines} lines - consider if it can be broken down",
+                    suggestion="Optional: Extract cohesive blocks if it improves readability"
                 ))
             
             # Too Many Parameters (indicates missing abstraction)
@@ -900,14 +904,20 @@ class JavaScriptAnalyzer:
             func_lines = content[start_pos:end_pos].count('\n')
             line_num = content[:match.start()].count('\n') + 1
             
-            if func_lines > 80:
+            # Only flag extremely long functions (300+ lines for JS/React components)
+            # React components and pages are naturally longer
+            is_test_file = any(x in path.lower() for x in ['test', 'spec', 'mock', '__test__'])
+            is_page_or_component = any(x in path.lower() for x in ['page', 'component', 'view', 'screen'])
+            
+            threshold = 500 if is_page_or_component else 300
+            if func_lines > threshold and not is_test_file:
                 smells.append(CodeSmell(
                     path=path,
                     type="Long Function",
-                    severity=4,
+                    severity=2,  # Low severity - informational only
                     line=line_num,
-                    message=f"Function '{func_name}' has ~{func_lines} lines",
-                    suggestion="Break into smaller functions with single responsibility"
+                    message=f"Function '{func_name}' has ~{func_lines} lines - quite large",
+                    suggestion="Optional: Consider breaking into smaller functions if it improves readability"
                 ))
         
         # Empty catch blocks
@@ -1133,9 +1143,11 @@ class RepoAnalyzer:
             critical_smells = [s for s in file_smells if s.severity >= 4]
             critical_types = set(s.type for s in critical_smells)
             
-            # Weight certain smell types higher
+            # Weight certain smell types higher - Long Function is NOT high risk
             high_risk_smells = {'Callback Hell', 'Empty Catch Block', 'Potential Memory Leak', 
-                               'High Complexity', 'Long Function', 'God Class'}
+                               'High Complexity', 'God Class', 'SQL Injection', 'XSS Vulnerability',
+                               'Hardcoded Credentials', 'Command Injection'}
+            # Long Function is excluded - it's just style, not a bug risk
             high_risk_count = sum(1 for s in critical_smells if s.type in high_risk_smells)
             
             if high_risk_count >= 3:
