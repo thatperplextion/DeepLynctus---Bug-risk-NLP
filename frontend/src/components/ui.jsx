@@ -22,170 +22,68 @@ export function GradientButton({ children, onClick, className = '', size = 'md',
     lg: 'px-8 py-4 text-lg'
   }
   
-  // Primary uses blob style with next-level 3D animations
+  // Optimized buttons using CSS transitions for performance
   if (variant === 'primary') {
     return (
-      <motion.button
+      <button
         onClick={onClick}
-        className={`btn-blob-3d btn-ripple ${sizes[size]} ${className}`}
-        whileHover={{ 
-          scale: 1.08,
-          y: -5,
-          rotateX: 5,
-          rotateY: -5,
-          transition: { type: 'spring', stiffness: 300, damping: 15 }
-        }}
-        whileTap={{ 
-          scale: 0.92, 
-          y: 2,
-          rotateX: 0,
-          rotateY: 0,
-        }}
-        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, type: 'spring' }}
-        style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
+        className={`btn-primary-fast ${sizes[size]} ${className}`}
       >
-        {/* Shine effect */}
-        <motion.div 
-          className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none"
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 1 }}
-        >
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-            initial={{ x: '-100%' }}
-            whileHover={{ x: '100%' }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-          />
-        </motion.div>
-        
-        <motion.span 
-          className="relative z-10 flex items-center justify-center gap-2"
-          whileHover={{ 
-            textShadow: '0 0 20px rgba(255,255,255,0.8)',
-          }}
-        >
+        <span className="relative z-10 flex items-center justify-center gap-2">
           {children}
-        </motion.span>
-      </motion.button>
+        </span>
+      </button>
     )
   }
   
   if (variant === 'secondary') {
     return (
-      <motion.button
+      <button
         onClick={onClick}
-        className={`btn-magnetic-3d btn-ripple ${sizes[size]} ${className}`}
-        whileHover={{ 
-          scale: 1.05,
-          boxShadow: '0 15px 35px rgba(6, 182, 212, 0.25), inset 0 0 30px rgba(6, 182, 212, 0.1)',
-          transition: { type: 'spring', stiffness: 300, damping: 15 }
-        }}
-        whileTap={{ scale: 0.95 }}
+        className={`btn-secondary-fast ${sizes[size]} ${className}`}
       >
         <span className="relative z-10">{children}</span>
-      </motion.button>
+      </button>
     )
   }
   
-  // Danger variant
+  // Danger variant - optimized with CSS
   return (
-    <motion.button
-      whileHover={{ 
-        scale: 1.08, 
-        y: -3,
-        boxShadow: '0 15px 40px rgba(239, 68, 68, 0.5)' 
-      }}
-      whileTap={{ scale: 0.95, y: 0 }}
+    <button
       onClick={onClick}
-      className={`${sizes[size]} bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 rounded-xl font-semibold text-white shadow-lg transition-all duration-300 btn-ripple ${className}`}
+      className={`${sizes[size]} bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 rounded-xl font-semibold text-white shadow-lg btn-danger-fast ${className}`}
     >
       {children}
-    </motion.button>
+    </button>
   )
 }
 
 export function ThinButton({ children, onClick, className = '', active = false }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.95 }}
+    <button
       onClick={onClick}
-      className={`btn-thin ${active ? 'active' : ''} ${className}`}
+      className={`btn-thin-fast ${active ? 'active' : ''} ${className}`}
     >
       {children}
-    </motion.button>
+    </button>
   )
 }
 
 export function GlassInput({ value, onChange, placeholder, className = '', icon }) {
   return (
-    <motion.div 
-      className={`search-glass-container relative ${className}`}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover="hover"
-    >
-      {/* Animated border glow */}
-      <motion.div 
-        className="absolute inset-0 rounded-xl opacity-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), transparent)',
-          backgroundSize: '200% 100%',
-        }}
-        variants={{
-          hover: { 
-            opacity: 1,
-            backgroundPosition: ['0% 0%', '200% 0%'],
-            transition: { duration: 1.5, repeat: Infinity, ease: 'linear' }
-          }
-        }}
-      />
-      
-      {/* Floating particles inside on hover */}
-      <motion.div 
-        className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none"
-        variants={{ hover: { opacity: 1 } }}
-        initial={{ opacity: 0 }}
-      >
-        {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400/40 rounded-full"
-            style={{ left: `${20 + i * 15}%`, bottom: '20%' }}
-            variants={{
-              hover: {
-                y: [0, -30, 0],
-                opacity: [0, 1, 0],
-                transition: { duration: 2, delay: i * 0.2, repeat: Infinity }
-              }
-            }}
-          />
-        ))}
-      </motion.div>
-
+    <div className={`search-glass-container-fast relative ${className}`}>
       {icon && (
-        <motion.span 
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10"
-          variants={{
-            hover: { 
-              scale: 1.2, 
-              rotate: [0, -10, 10, 0],
-              color: '#22d3ee',
-              transition: { duration: 0.4 }
-            }
-          }}
-        >
+        <span className="glass-icon absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
           {icon}
-        </motion.span>
+        </span>
       )}
       <input
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`search-glass-input w-full ${icon ? 'pl-12' : 'pl-4'} pr-4 py-3.5`}
+        className={`search-glass-input-fast w-full ${icon ? 'pl-12' : 'pl-4'} pr-4 py-3.5`}
       />
-    </motion.div>
+    </div>
   )
 }
 

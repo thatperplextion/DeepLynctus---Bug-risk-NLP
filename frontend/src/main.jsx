@@ -59,59 +59,19 @@ function App(){
           <span className="text-xl font-bold gradient-text">CodeSenseX</span>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Optimized for performance */}
         <nav className="hidden md:flex items-center gap-2 nav-glass-container rounded-full px-4 py-2.5">
-          {NAV_ITEMS.map((item, index) => (
-            <motion.button
+          {NAV_ITEMS.map((item) => (
+            <button
               key={item.id}
               onClick={() => { setCurrentPage(item.id); setSelectedFile(null); }}
-              className={`nav-btn-3d ${
+              className={`nav-btn-fast ${
                 currentPage === item.id ? 'active' : ''
               }`}
-              initial={{ opacity: 0, y: -20, rotateX: -30 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              transition={{ delay: index * 0.1, type: 'spring', stiffness: 200 }}
-              whileHover={{ 
-                scale: 1.1,
-                y: -4,
-                rotateY: 5,
-                transition: { type: 'spring', stiffness: 300, damping: 12 }
-              }}
-              whileTap={{ scale: 0.92, y: 0 }}
-              style={{ transformStyle: 'preserve-3d' }}
             >
-              <motion.span 
-                className="mr-2 inline-block"
-                whileHover={{ 
-                  scale: 1.3,
-                  rotate: [0, -15, 15, -10, 10, 0], 
-                  transition: { duration: 0.6 } 
-                }}
-              >
-                {item.icon}
-              </motion.span>
-              <span className="relative">
-                {item.label}
-                {currentPage === item.id && (
-                  <motion.div
-                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 rounded-full"
-                    layoutId="activeTabLine"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  />
-                )}
-              </span>
-              {currentPage === item.id && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-sky-500/20"
-                  layoutId="activeTabBg"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-            </motion.button>
+              <span className="nav-icon mr-2">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
           ))}
         </nav>
 
