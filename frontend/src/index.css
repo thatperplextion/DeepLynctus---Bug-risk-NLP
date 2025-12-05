@@ -159,6 +159,103 @@ body {
   opacity: 1;
 }
 
+/* ===== 3D NAV BUTTONS - NEXT LEVEL ===== */
+.nav-glass-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn-3d {
+  position: relative;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgba(209, 213, 219, 0.9);
+  background: transparent;
+  border: 1px solid transparent;
+  overflow: visible;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  perspective: 500px;
+}
+
+.nav-btn-3d::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, 
+    rgba(20, 184, 166, 0.4), 
+    rgba(6, 182, 212, 0.2), 
+    rgba(14, 165, 233, 0.4));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(8px);
+}
+
+.nav-btn-3d::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent);
+  transition: left 0.5s ease;
+  border-radius: inherit;
+}
+
+.nav-btn-3d:hover {
+  color: white;
+  text-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+  border-color: rgba(6, 182, 212, 0.3);
+  background: rgba(6, 182, 212, 0.08);
+  box-shadow: 
+    0 5px 20px rgba(6, 182, 212, 0.2),
+    inset 0 0 20px rgba(6, 182, 212, 0.05);
+}
+
+.nav-btn-3d:hover::before {
+  opacity: 0.6;
+}
+
+.nav-btn-3d:hover::after {
+  left: 100%;
+}
+
+.nav-btn-3d.active {
+  color: white;
+  border-color: rgba(6, 182, 212, 0.5);
+  background: linear-gradient(135deg, 
+    rgba(20, 184, 166, 0.12), 
+    rgba(6, 182, 212, 0.12), 
+    rgba(14, 165, 233, 0.12));
+  box-shadow: 
+    0 5px 25px rgba(6, 182, 212, 0.3),
+    inset 0 0 25px rgba(6, 182, 212, 0.1),
+    0 0 0 1px rgba(6, 182, 212, 0.2);
+}
+
+.nav-btn-3d.active::before {
+  opacity: 0.5;
+  animation: navGlow 2s ease-in-out infinite;
+}
+
+@keyframes navGlow {
+  0%, 100% { filter: blur(8px); opacity: 0.5; }
+  50% { filter: blur(12px); opacity: 0.7; }
+}
+
 /* ===== SEARCH/SCAN BUTTON PULSE ===== */
 .btn-blob {
   position: relative;
@@ -185,7 +282,206 @@ body {
   }
 }
 
-/* ===== BLOB BUTTON ===== */
+/* ===== 3D BLOB BUTTON - NEXT LEVEL ===== */
+.btn-blob-3d {
+  @apply relative px-6 py-3 rounded-2xl font-semibold text-white overflow-visible;
+  background: linear-gradient(135deg, #14b8a6, #06b6d4, #0ea5e9);
+  background-size: 300% 300%;
+  animation: gradientFlow 4s ease infinite, floatBtn 3s ease-in-out infinite;
+  box-shadow: 
+    0 4px 15px rgba(6, 182, 212, 0.4),
+    0 8px 30px rgba(6, 182, 212, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.btn-blob-3d::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #14b8a6, #06b6d4, #0ea5e9, #8b5cf6, #14b8a6);
+  background-size: 400% 400%;
+  animation: borderRotate 3s linear infinite;
+  filter: blur(8px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.btn-blob-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+  animation: pulse-ring 2.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+.btn-blob-3d:hover {
+  box-shadow: 
+    0 8px 25px rgba(6, 182, 212, 0.5),
+    0 15px 50px rgba(6, 182, 212, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+  animation: gradientFlow 2s ease infinite;
+}
+
+.btn-blob-3d:hover::before {
+  opacity: 0.7;
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes floatBtn {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* ===== 3D MAGNETIC BUTTON ===== */
+.btn-magnetic-3d {
+  @apply relative px-6 py-3 rounded-xl font-semibold overflow-hidden;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-magnetic-3d::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.25), transparent 70%);
+  transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+.btn-magnetic-3d::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+  background-size: 200% 200%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-magnetic-3d:hover {
+  border-color: rgba(6, 182, 212, 0.5);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.btn-magnetic-3d:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-magnetic-3d:hover::after {
+  opacity: 1;
+  animation: shineSlide 0.6s ease;
+}
+
+@keyframes shineSlide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===== GLASSY SEARCH BAR ===== */
+.search-glass-container {
+  position: relative;
+}
+
+.search-glass-input {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  color: white;
+  font-size: 1rem;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 20px rgba(6, 182, 212, 0);
+}
+
+.search-glass-input::placeholder {
+  color: rgba(156, 163, 175, 0.6);
+  transition: all 0.3s ease;
+}
+
+.search-glass-input:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(6, 182, 212, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 0 30px rgba(6, 182, 212, 0.05);
+}
+
+.search-glass-input:focus {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.5);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    0 0 30px rgba(6, 182, 212, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 40px rgba(6, 182, 212, 0.08);
+}
+
+.search-glass-input:focus::placeholder {
+  color: rgba(156, 163, 175, 0.4);
+  transform: translateX(5px);
+}
+
+.search-glass-container::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(135deg, 
+    rgba(20, 184, 166, 0.3), 
+    rgba(6, 182, 212, 0.1), 
+    rgba(14, 165, 233, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.search-glass-container:hover::before,
+.search-glass-container:focus-within::before {
+  opacity: 1;
+}
+
+/* ===== BLOB BUTTON LEGACY ===== */
 .btn-blob {
   @apply relative px-6 py-3 rounded-2xl font-semibold text-white overflow-hidden;
   background: linear-gradient(135deg, #14b8a6, #06b6d4, #0ea5e9);
