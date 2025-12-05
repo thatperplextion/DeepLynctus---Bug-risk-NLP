@@ -76,8 +76,8 @@ export async function startScan(projectId) {
   return res.json();
 }
 
-export async function getSuggestions(fileId, limit = 5) {
-  const url = new URL(`${BASE_URL}/suggestions/${fileId}`);
+export async function getSuggestions(projectId, fileId, limit = 5) {
+  const url = new URL(`${BASE_URL}/suggestions/${projectId}/${fileId}`);
   if (limit) url.searchParams.set('limit', String(limit));
   const res = await fetchWithTimeout(url);
   return res.json();

@@ -427,19 +427,21 @@ if elapsed > CACHE_TTL_SECONDS:
     }
     
     @staticmethod
-    async def fetch_suggestions(file_id: str, limit: int):
+    async def fetch_suggestions(project_id: str, file_id: str, limit: int):
         """
         Generate refactoring suggestions based on detected smells for a file.
+        Only fetches smells from the current project to avoid stale data.
         """
         db = get_database()
         file_path = file_id.replace('_', '/')  # Reverse the path encoding
         
-        # Try to find smells for this file
+        # Try to find smells for this file IN THIS PROJECT ONLY
         smells = []
         try:
             if hasattr(db, '_db') and db._db is not None:
-                # Search for smells matching this file path (handle both / and \)
+                # Search for smells matching this file path AND project
                 cursor = db._db.smells.find({
+                    "project_id": project_id,
                     "$or": [
                         {"path": {"$regex": file_path.replace('/', '.'), "$options": "i"}},
                         {"path": {"$regex": file_id, "$options": "i"}}

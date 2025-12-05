@@ -48,11 +48,17 @@ export default function FileDetail({ file, onBack, projectId }) {
     
     // Load suggestions
     const loadSuggestions = async () => {
+      if (!projectId) {
+        setSuggestions([])
+        setLoadingSuggestions(false)
+        return
+      }
+      
       setLoadingSuggestions(true)
       try {
         // Encode the path for the API (replace / and \ with _)
         const encodedPath = (file.path || '').replace(/[\/\\]/g, '_')
-        const data = await getSuggestions(encodedPath, 5)
+        const data = await getSuggestions(projectId, encodedPath, 5)
         setSuggestions(data.suggestions || [])
       } catch (err) {
         console.error('Failed to load suggestions:', err)
