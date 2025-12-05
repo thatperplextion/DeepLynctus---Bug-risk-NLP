@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 function App(){
   const [currentPage, setCurrentPage] = useState('overview')
   const [selectedFile, setSelectedFile] = useState(null)
-  const [projectId, setProjectId] = useState(() => localStorage.getItem('codesensex_project') || '')
+  const [projectId, setProjectId] = useState('')  // Start empty, only set after scan
 
   const handleFileSelect = (file) => {
     setSelectedFile(file)

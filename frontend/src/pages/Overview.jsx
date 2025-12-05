@@ -19,7 +19,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function Overview({ onFileSelect, onProjectChange }) {
-  const [projectId, setProjectId] = useState(() => localStorage.getItem('codesensex_project') || 'demo')
+  const [projectId, setProjectId] = useState('')
   const [metrics, setMetrics] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState({ avg_risk: 0, high: 0, critical: 0 })
@@ -27,12 +27,13 @@ export default function Overview({ onFileSelect, onProjectChange }) {
   const [loading, setLoading] = useState(false)
   const [scanned, setScanned] = useState(false)
   const [scanStatus, setScanStatus] = useState('')
+  const [hasPreviousScan, setHasPreviousScan] = useState(false)
 
-  // Load existing data when component mounts if there's a valid projectId
+  // Check if there's a previous scan on mount (but don't auto-load)
   useEffect(() => {
     const savedProjectId = localStorage.getItem('codesensex_project')
-    if (savedProjectId && savedProjectId !== 'demo') {
-      loadData(savedProjectId)
+    if (savedProjectId && savedProjectId !== 'demo' && savedProjectId !== '') {
+      setHasPreviousScan(true)
     }
   }, [])
 
@@ -56,10 +57,21 @@ export default function Overview({ onFileSelect, onProjectChange }) {
       setRisks(r.items || [])
       setSummary(r.summary || { avg_risk: 0, high: 0, critical: 0 })
       setScanned(true)
+      setProjectId(id)
+      if (onProjectChange) {
+        onProjectChange(id)
+      }
     } catch (err) {
       console.error('Load data error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPreviousScan = async () => {
+    const savedProjectId = localStorage.getItem('codesensex_project')
+    if (savedProjectId && savedProjectId !== 'demo' && savedProjectId !== '') {
+      await loadData(savedProjectId)
     }
   }
 
@@ -176,15 +188,25 @@ export default function Overview({ onFileSelect, onProjectChange }) {
             <GradientButton onClick={queueAndScan} size="md">
               🚀 Scan Repository
             </GradientButton>
-            <GradientButton onClick={() => loadData(projectId)} variant="secondary" size="md">
-              🔄 Refresh
-            </GradientButton>
+            {scanned && (
+              <GradientButton onClick={() => loadData(projectId)} variant="secondary" size="md">
+                🔄 Refresh
+              </GradientButton>
+            )}
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
-          <span>Project ID: <code className="text-cyan-400">{projectId}</code></span>
+        <div className="mt-4 flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+          {projectId && <span>Project ID: <code className="text-cyan-400">{projectId}</code></span>}
           {scanned && <span className="text-emerald-400">✓ Scanned</span>}
           {scanStatus && <span className="text-yellow-400 animate-pulse">{scanStatus}</span>}
+          {hasPreviousScan && !scanned && (
+            <button 
+              onClick={loadPreviousScan}
+              className="text-cyan-400 hover:text-cyan-300 underline transition-colors"
+            >
+              Load previous scan results
+            </button>
+          )}
         </div>
       </GlassCard>
 
@@ -193,6 +215,29 @@ export default function Overview({ onFileSelect, onProjectChange }) {
           <Loader />
           {scanStatus && <p className="mt-4 text-gray-400">{scanStatus}</p>}
         </div>
+      )}
+
+      {/* Empty State - Show when no scan has been done */}
+      {!scanned && !loading && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-16"
+        >
+          <div className="text-6xl mb-6">🔍</div>
+          <h3 className="text-2xl font-bold text-gray-300 mb-2">No Repository Scanned</h3>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            Enter a GitHub repository URL above and click "Scan Repository" to analyze code quality, detect bugs, and get AI-powered refactoring suggestions.
+          </p>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-sm text-gray-600">Supported formats:</p>
+            <div className="flex flex-wrap justify-center gap-2 text-xs">
+              <code className="glass px-3 py-1 rounded-full text-gray-400">https://github.com/user/repo</code>
+              <code className="glass px-3 py-1 rounded-full text-gray-400">github.com/user/repo</code>
+              <code className="glass px-3 py-1 rounded-full text-gray-400">user/repo</code>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       <AnimatePresence>
