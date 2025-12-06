@@ -12,8 +12,8 @@ from controllers.smells_controller import router as smells_router
 from controllers.suggestions_controller import router as suggestions_router
 from controllers.report_controller import router as report_router
 from services.db import get_database
-from services.dependency_service import get_project_dependencies
-from services.history_service import get_history, get_trends, get_comparison
+from services.dependency_service import get_dependency_graph
+from services.history_service import get_trend_data, get_comparison_data
 from services.chatbot_service import chat_with_assistant, clear_chat_session
 
 
@@ -63,7 +63,7 @@ app.include_router(report_router, prefix="/report", tags=["report"])
 async def get_dependencies(project_id: str):
     """Get dependency graph data for D3.js visualization."""
     try:
-        graph = await get_project_dependencies(project_id)
+        graph = await get_dependency_graph(project_id)
         if not graph:
             raise HTTPException(status_code=404, detail="Project not found")
         return graph
@@ -76,8 +76,8 @@ async def get_dependencies(project_id: str):
 async def get_scan_history(project_id: str, limit: int = 30):
     """Get scan history for a project."""
     try:
-        history = await get_history(project_id, limit)
-        return {"project_id": project_id, "scans": history}
+        trends = await get_trend_data(project_id, days=30, limit=limit)
+        return {"project_id": project_id, "scans": trends.get("scans", [])}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -86,17 +86,17 @@ async def get_scan_history(project_id: str, limit: int = 30):
 async def get_project_trends(project_id: str):
     """Get trend analysis for a project."""
     try:
-        trends = await get_trends(project_id)
+        trends = await get_trend_data(project_id)
         return trends
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/history/{project_id}/compare", tags=["history"])
-async def compare_scans(project_id: str, scan1: str, scan2: str):
-    """Compare two scans."""
+async def compare_scans(project_id: str):
+    """Compare current scan with previous."""
     try:
-        comparison = await get_comparison(project_id, scan1, scan2)
+        comparison = await get_comparison_data(project_id)
         if not comparison:
             raise HTTPException(status_code=404, detail="Scans not found")
         return comparison
