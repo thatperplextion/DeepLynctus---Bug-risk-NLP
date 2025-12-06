@@ -6,12 +6,18 @@ import Overview from './pages/Overview'
 import FileDetail from './pages/FileDetail'
 import CodeSmells from './pages/CodeSmells'
 import Heatmap from './pages/Heatmap'
+import DependencyGraph from './pages/DependencyGraph'
+import TrendsDashboard from './pages/TrendsDashboard'
+import ChatBot from './pages/ChatBot'
 import BackendStatus from './components/BackendStatus'
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: '📊' },
   { id: 'heatmap', label: 'Heatmap', icon: '🗺️' },
-  { id: 'smells', label: 'Code Smells', icon: '🧪' }
+  { id: 'smells', label: 'Smells', icon: '🧪' },
+  { id: 'dependencies', label: 'Graph', icon: '🔗' },
+  { id: 'trends', label: 'Trends', icon: '📈' },
+  { id: 'chat', label: 'AI Chat', icon: '🤖' }
 ]
 
 function App(){
@@ -120,6 +126,36 @@ function App(){
               exit={{ opacity: 0, x: 20 }}
             >
               <CodeSmells projectId={projectId} onFileSelect={handleFileSelect} />
+            </motion.div>
+          )}
+          {currentPage === 'dependencies' && (
+            <motion.div
+              key="dependencies"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <DependencyGraph projectId={projectId} />
+            </motion.div>
+          )}
+          {currentPage === 'trends' && (
+            <motion.div
+              key="trends"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <TrendsDashboard projectId={projectId} />
+            </motion.div>
+          )}
+          {currentPage === 'chat' && (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <ChatBot projectId={projectId} />
             </motion.div>
           )}
         </AnimatePresence>
