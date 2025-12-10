@@ -1,4 +1,4 @@
-export const API_URL = 'http://localhost:8000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const BASE_URL = API_URL;
 
 async function fetchWithTimeout(url, options = {}, timeout = 120000) {
