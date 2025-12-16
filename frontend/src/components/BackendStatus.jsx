@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { API_URL } from '../services/api'
 
 export default function BackendStatus(){
   const [status, setStatus] = useState('checking')
@@ -7,7 +8,7 @@ export default function BackendStatus(){
   useEffect(()=>{
     const check = async () => {
       try{
-        const res = await fetch('http://localhost:8000/')
+        const res = await fetch(`${API_URL}/`)
         const json = await res.json()
         if(json && json.status === 'ok') setStatus('ok')
         else setStatus('error')
