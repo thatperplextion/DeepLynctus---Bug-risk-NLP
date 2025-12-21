@@ -319,6 +319,50 @@ class MongoDBAtlas(DatabaseInterface):
             if '_id' in r:
                 r['_id'] = str(r['_id'])
         return results
+    
+    async def get_scan_history(self, project_id: str, limit: int = 30) -> List[Dict[str, Any]]:
+        """Get historical scan records for a project."""
+        if not self._connected:
+            await self.connect()
+        cursor = self._db.scan_history.find({"project_id": project_id}).sort("timestamp", -1).limit(limit)
+        results = await cursor.to_list(length=limit)
+        for r in results:
+            if '_id' in r:
+                r['_id'] = str(r['_id'])
+        return results
+    
+    async def get_metrics_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Get metrics for a specific scan."""
+        if not self._connected:
+            await self.connect()
+        cursor = self._db.file_metrics.find({"project_id": project_id, "scan_id": scan_id})
+        results = await cursor.to_list(length=1000)
+        for r in results:
+            if '_id' in r:
+                r['_id'] = str(r['_id'])
+        return results if results else None
+    
+    async def get_smells_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Get issues for a specific scan."""
+        if not self._connected:
+            await self.connect()
+        cursor = self._db.smells.find({"project_id": project_id, "scan_id": scan_id})
+        results = await cursor.to_list(length=1000)
+        for r in results:
+            if '_id' in r:
+                r['_id'] = str(r['_id'])
+        return results if results else None
+    
+    async def save_scan_record(self, project_id: str, scan_data: Dict[str, Any]) -> str:
+        """Save a scan record to history."""
+        if not self._connected:
+            await self.connect()
+        
+        scan_data['project_id'] = project_id
+        scan_data['timestamp'] = datetime.utcnow()
+        
+        result = await self._db.scan_history.insert_one(scan_data)
+        return str(result.inserted_id)
 
 
 # Singleton database instance
