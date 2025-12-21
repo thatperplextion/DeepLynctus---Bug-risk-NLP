@@ -9,6 +9,8 @@ import Heatmap from './pages/Heatmap'
 import DependencyGraph from './pages/DependencyGraph'
 import TrendsDashboard from './pages/TrendsDashboard'
 import ChatBot from './pages/ChatBot'
+import ComparisonView from './pages/ComparisonView'
+import TimelineAnalysis from './pages/TimelineAnalysis'
 import BackendStatus from './components/BackendStatus'
 
 const NAV_ITEMS = [
@@ -17,6 +19,8 @@ const NAV_ITEMS = [
   { id: 'smells', label: 'Smells', icon: '🧪' },
   { id: 'dependencies', label: 'Graph', icon: '🔗' },
   { id: 'trends', label: 'Trends', icon: '📈' },
+  { id: 'comparison', label: 'Comparison', icon: '⚖️' },
+  { id: 'timeline', label: 'Timeline', icon: '⏳' },
   { id: 'chat', label: 'AI Chat', icon: '🤖' }
 ]
 
@@ -146,6 +150,26 @@ function App(){
               exit={{ opacity: 0, x: 20 }}
             >
               <TrendsDashboard projectId={projectId} />
+            </motion.div>
+          )}
+          {currentPage === 'comparison' && (
+            <motion.div
+              key="comparison"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <ComparisonView projectId={projectId} />
+            </motion.div>
+          )}
+          {currentPage === 'timeline' && (
+            <motion.div
+              key="timeline"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <TimelineAnalysis projectId={projectId} />
             </motion.div>
           )}
           {currentPage === 'chat' && (
