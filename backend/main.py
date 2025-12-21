@@ -11,6 +11,7 @@ from controllers.risks_controller import router as risks_router
 from controllers.smells_controller import router as smells_router
 from controllers.suggestions_controller import router as suggestions_router
 from controllers.report_controller import router as report_router
+from controllers.comparison_controller import router as comparison_router
 from services.db import get_database
 from services.dependency_service import get_dependency_graph
 from services.history_service import get_trend_data, get_comparison_data
@@ -56,6 +57,7 @@ app.include_router(risks_router, prefix="/risks", tags=["risks"])
 app.include_router(smells_router, prefix="/smells", tags=["smells"])
 app.include_router(suggestions_router, prefix="/suggestions", tags=["suggestions"])
 app.include_router(report_router, prefix="/report", tags=["report"])
+app.include_router(comparison_router, prefix="/comparison", tags=["comparison"])
 
 
 # ============== Dependency Graph Endpoints ==============
