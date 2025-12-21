@@ -56,6 +56,22 @@ class DatabaseInterface(ABC):
         pass
     
     @abstractmethod
+    async def get_scan_history(self, project_id: str, limit: int = 30) -> List[Dict[str, Any]]:
+        pass
+    
+    @abstractmethod
+    async def get_metrics_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        pass
+    
+    @abstractmethod
+    async def get_smells_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        pass
+    
+    @abstractmethod
+    async def save_scan_record(self, project_id: str, scan_data: Dict[str, Any]) -> str:
+        pass
+    
+    @abstractmethod
     async def connect(self) -> bool:
         pass
     
@@ -72,6 +88,7 @@ class InMemoryDB(DatabaseInterface):
         self.file_metrics: Dict[str, Dict[str, Any]] = {}
         self.risks: Dict[str, Dict[str, Any]] = {}
         self.smells: Dict[str, Dict[str, Any]] = {}
+        self.scan_history: Dict[str, List[Dict[str, Any]]] = {}  # project_id -> list of scans
         self._connected = True
     
     async def upsert_project(self, project: Dict[str, Any]) -> None:
@@ -108,9 +125,34 @@ class InMemoryDB(DatabaseInterface):
     async def get_smells(self, project_id: str) -> List[Dict[str, Any]]:
         return [s for s in self.smells.values() if s.get('project_id') == project_id]
     
+    async def get_scan_history(self, project_id: str, limit: int = 30) -> List[Dict[str, Any]]:
+        """Get historical scan records for a project."""
+        return self.scan_history.get(project_id, [])[-limit:]
+    
+    async def get_metrics_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Get metrics for a specific scan."""
+        # In in-memory DB, return current metrics (no historical data stored separately)
+        return await self.get_metrics(project_id)
+    
+    async def get_smells_by_scan(self, project_id: str, scan_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Get issues for a specific scan."""
+        # In in-memory DB, return current issues (no historical data stored separately)
+        return await self.get_smells(project_id)
+    
+    async def save_scan_record(self, project_id: str, scan_data: Dict[str, Any]) -> str:
+        """Save a scan record to history."""
+        if project_id not in self.scan_history:
+            self.scan_history[project_id] = []
+        
+        scan_data['_id'] = str(len(self.scan_history[project_id]))
+        scan_data['timestamp'] = datetime.utcnow().isoformat()
+        self.scan_history[project_id].append(scan_data)
+        return scan_data['_id']
+    
     async def connect(self) -> bool:
         print("✅ Using in-memory database")
         return True
+    
     
     async def close(self) -> None:
         self.projects.clear()
