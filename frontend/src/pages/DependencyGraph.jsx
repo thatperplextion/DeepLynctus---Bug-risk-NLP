@@ -1026,6 +1026,32 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
     );
   }
   
+  // Show message if graph loaded but has no nodes
+  if (!loading && nodes.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          className="text-center p-12 rounded-3xl max-w-2xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.2)'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <span className="text-6xl mb-6 block">📊</span>
+          <h2 className="text-2xl font-bold text-white mb-3">No Dependencies Found</h2>
+          <p className="text-gray-400 mb-4">
+            This project has no file dependencies to visualize.
+          </p>
+          <p className="text-sm text-gray-500">
+            The project may not have been analyzed yet or contains no importable files.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+  
   return (
     <div 
       ref={containerRef}
