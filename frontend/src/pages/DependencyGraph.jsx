@@ -1082,9 +1082,14 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
       >
         {/* Edges */}
         <g className="edges">
-          {edges.map((edge, i) => {
+          {positions && positions.length > 0 && edges.map((edge, i) => {
             const sourceIdx = nodes.findIndex(n => n.id === edge.source);
             const targetIdx = nodes.findIndex(n => n.id === edge.target);
+            
+            if (sourceIdx === -1 || targetIdx === -1 || !positions[sourceIdx] || !positions[targetIdx]) {
+              return null;
+            }
+            
             const isHighlighted = highlightedEdges.has(`${edge.source}-${edge.target}`);
             
             return (
@@ -1101,7 +1106,7 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
         
         {/* Nodes */}
         <g className="nodes">
-          {filteredNodes.map((node, i) => {
+          {positions && positions.length > 0 && filteredNodes.map((node, i) => {
             const nodeIdx = nodes.findIndex(n => n.id === node.id);
             const pos = positions[nodeIdx];
             
