@@ -41,6 +41,7 @@ class DependencyAnalyzer:
         return {
             "nodes": self.nodes,
             "links": self.links,
+            "edges": self.links,  # Add both formats for compatibility
             "stats": {
                 "total_files": len(self.nodes),
                 "total_connections": len(self.links),
@@ -93,6 +94,8 @@ class DependencyAnalyzer:
         self.nodes.append({
             "id": node_id,
             "name": file_path.name,
+            "label": file_path.name,  # Add label field
+            "path": rel_path,
             "type": file_type,
             "metrics": {"lines": loc, "complexity": 0},
             "risk": 0

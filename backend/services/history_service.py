@@ -1,13 +1,41 @@
 """
-Historical Trends Service - Simple trend tracking using existing DB data.
+Historical Trends Service - Tracks scan history in MongoDB for comparisons and timeline analysis.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
 
-# In-memory cache for trends (simulates historical data)
-_trends_cache: Dict[str, List[Dict]] = {}
+async def save_scan_snapshot(project_id: str, metrics: Dict[str, Any]) -> str:
+    """Save a scan snapshot to the database."""
+    from services.db import db
+    
+    snapshot = {
+        "project_id": project_id,
+        "scan_id": f"scan_{int(datetime.utcnow().timestamp())}",
+        "timestamp": datetime.utcnow(),
+        "metrics": metrics,
+        "created_at": datetime.utcnow()
+    }
+    
+    # Store in scan_history collection
+    await db.insert("scan_history", snapshot)
+    
+    return snapshot["scan_id"]
+
+
+async def get_scan_history(project_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """Get scan history for a project."""
+    from services.db import db
+    
+    history = await db.find(
+        "scan_history",
+        {"project_id": project_id},
+        sort=[("timestamp", -1)],
+        limit=limit
+    )
+    
+    return history
 
 
 async def get_trend_data(project_id: str, days: int = 30, limit: int = 50) -> Dict[str, Any]:

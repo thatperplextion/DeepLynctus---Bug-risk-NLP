@@ -745,7 +745,7 @@ const GraphStats = ({ nodes, edges }) => {
 // ============================================================================
 // MAIN DEPENDENCY GRAPH COMPONENT
 // ============================================================================
-const DependencyGraph = ({ projectId }) => {
+const DependencyGraph = ({ projectId: propProjectId }) => {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [nodes, setNodes] = useState([]);
@@ -764,6 +764,12 @@ const DependencyGraph = ({ projectId }) => {
     typescript: true,
     other: true
   });
+  
+  // Get project ID from props or URL
+  const projectId = propProjectId || (() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('project') || params.get('id') || localStorage.getItem('currentProjectId');
+  })();
   
   // Resize observer
   useEffect(() => {
@@ -797,23 +803,43 @@ const DependencyGraph = ({ projectId }) => {
         if (!response.ok) throw new Error('Failed to fetch dependencies');
         const data = await response.json();
         
-        // Process nodes
-        const processedNodes = (data.nodes || []).map((node, i) => ({
-          ...node,
-          id: node.id || `node-${i}`,
-          type: node.type || (node.label?.endsWith('.py') ? 'python' : 
-                             node.label?.endsWith('.js') ? 'javascript' :
-                             node.label?.endsWith('.ts') || node.label?.endsWith('.tsx') ? 'typescript' : 'other'),
-          risk: node.risk || Math.floor(Math.random() * 100),
-          connections: (data.edges || []).filter(e => e.source === node.id || e.target === node.id).length,
-          imports: (data.edges || []).filter(e => e.target === node.id).length,
-          exports: (data.edges || []).filter(e => e.source === node.id).length,
-          size: node.size || Math.floor(Math.random() * 500) + 50
+        // Handle both 'links' and 'edges' from backend
+        const connections = data.links || data.edges || [];
+        
+        // Process nodes with proper labeling
+        const processedNodes = (data.nodes || []).map((node, i) => {
+          const fileName = node.name || node.label || node.id || `file-${i}`;
+          const nodeId = node.id || `node-${i}`;
+          
+          return {
+            ...node,
+            id: nodeId,
+            label: fileName,
+            type: node.type || (
+              fileName.endsWith('.py') ? 'python' : 
+              fileName.endsWith('.js') || fileName.endsWith('.jsx') ? 'javascript' :
+              fileName.endsWith('.ts') || fileName.endsWith('.tsx') ? 'typescript' : 'other'
+            ),
+            risk: node.risk || node.metrics?.complexity || Math.floor(Math.random() * 100),
+            connections: connections.filter(e => e.source === nodeId || e.target === nodeId).length,
+            imports: connections.filter(e => e.target === nodeId).length,
+            exports: connections.filter(e => e.source === nodeId).length,
+            size: node.metrics?.lines || node.size || Math.floor(Math.random() * 500) + 50
+          };
+        });
+        
+        // Convert links to edges format
+        const processedEdges = connections.map((link, i) => ({
+          id: `edge-${i}`,
+          source: link.source,
+          target: link.target,
+          type: link.type || 'import'
         }));
         
         setNodes(processedNodes);
-        setEdges(data.edges || []);
+        setEdges(processedEdges);
       } catch (err) {
+        console.error('Error fetching graph:', err);
         setError(err.message);
       } finally {
         setLoading(false);
