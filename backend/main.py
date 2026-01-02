@@ -8,11 +8,12 @@ from controllers.upload_controller import router as upload_router
 from controllers.scan_controller import router as scan_router
 from controllers.metrics_controller import router as metrics_router
 from controllers.risks_controller import router as risks_router
-from controllers.smells_controller import router as smells_router
-from controllers.suggestions_controller import router as suggestions_router
+from controllers.smells_router import router as smells_router
+from controllers.suggestions_router import router as suggestions_router
 from controllers.report_controller import router as report_router
 from controllers.comparison_controller import router as comparison_router
 from controllers.notification_controller import router as notification_router
+from controllers.user_controller import router as user_router
 from services.db import get_database
 from services.dependency_service import get_dependency_graph
 from services.history_service import get_trend_data, get_comparison_data
@@ -55,11 +56,12 @@ app.include_router(upload_router, prefix="/upload", tags=["upload"])
 app.include_router(scan_router, prefix="/scan", tags=["scan"])
 app.include_router(metrics_router, prefix="/metrics", tags=["metrics"])
 app.include_router(risks_router, prefix="/risks", tags=["risks"])
-app.include_router(smells_controller, prefix="/smells", tags=["smells"])
+app.include_router(smells_router, prefix="/smells", tags=["smells"])
 app.include_router(suggestions_router, prefix="/suggestions", tags=["suggestions"])
 app.include_router(report_router, prefix="/report", tags=["report"])
 app.include_router(comparison_router, prefix="/comparison", tags=["comparison"])
 app.include_router(notification_router, prefix="/notifications", tags=["notifications"])
+app.include_router(user_router, prefix="/users", tags=["users"])
 
 
 # ============== Dependency Graph Endpoints ==============
