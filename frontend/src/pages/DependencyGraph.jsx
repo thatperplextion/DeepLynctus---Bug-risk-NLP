@@ -764,12 +764,34 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
     typescript: true,
     other: true
   });
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   
-  // Get project ID from props or URL
-  const projectId = propProjectId || (() => {
+  // Get project ID from props, URL, or state
+  const projectId = selectedProjectId || propProjectId || (() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('project') || params.get('id') || localStorage.getItem('currentProjectId');
   })();
+  
+  // Fetch available projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch(`${API_URL}/projects`);
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data || []);
+          // Auto-select first project if no projectId
+          if (!projectId && data && data.length > 0) {
+            setSelectedProjectId(data[0]._id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+      }
+    };
+    fetchProjects();
+  }, []);
   
   // Resize observer
   useEffect(() => {
@@ -836,6 +858,7 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
           type: link.type || 'import'
         }));
         
+        console.log('Dependency graph data:', { nodes: processedNodes.length, edges: processedEdges.length });
         setNodes(processedNodes);
         setEdges(processedEdges);
       } catch (err) {
@@ -846,7 +869,11 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
       }
     };
     
-    fetchGraph();
+    if (projectId) {
+      fetchGraph();
+    } else {
+      setLoading(false);
+    }
   }, [projectId]);
   
   // Get force-directed positions
@@ -942,7 +969,7 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
     );
   }
   
-  if (!projectId) {
+  if (!projectId && projects.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -960,6 +987,40 @@ const DependencyGraph = ({ projectId: propProjectId }) => {
             Analyze a project to visualize file dependencies, 
             import relationships, and identify complex coupling patterns.
           </p>
+        </motion.div>
+      </div>
+    );
+  }
+  
+  if (!projectId && projects.length > 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <motion.div
+          className="text-center p-12 rounded-3xl max-w-2xl w-full"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.2)'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <span className="text-6xl mb-6 block">🕸️</span>
+          <h2 className="text-2xl font-bold text-white mb-3">Select a Project</h2>
+          <p className="text-gray-400 mb-6">
+            Choose a project to visualize its dependency graph
+          </p>
+          <select
+            className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white"
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            defaultValue=""
+          >
+            <option value="" disabled>Select a project...</option>
+            {projects.map(project => (
+              <option key={project._id} value={project._id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </motion.div>
       </div>
     );
