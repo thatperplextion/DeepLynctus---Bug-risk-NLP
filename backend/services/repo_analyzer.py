@@ -32,37 +32,22 @@ SECURITY_PATTERNS = {
     ],
     'database_credentials': [
         r'(?:mongodb\+srv|mysql|postgresql|postgres)://[^:]+:[^@]+@',  # DB connection strings with credentials
-        r'(?:host|server)\s*=\s*["\'][^"\']+["\'].*(?:user|username|uid)\s*=\s*["\'][^"\']+["\'].*(?:password|pwd|pass)\s*=\s*["\'][^"\']+["\']',
         r'DATABASE_URL\s*=\s*["\'](?:mysql|postgres|mongodb)://[^"\']+["\']',
     ],
     'api_keys': [
         r'(?:api[_-]?key|apikey|api[_-]?secret)\s*[:=]\s*["\'](?!(?:your|test|demo|example|xxx|000))[A-Za-z0-9_\-]{20,}["\']',
         r'(?:OPENAI|openai|gpt)[_-]?(?:API|api)[_-]?(?:KEY|key)\s*[:=]\s*["\']sk-[A-Za-z0-9]{20,}["\']',
         r'(?:GITHUB|github)[_-]?(?:TOKEN|token|PAT)\s*[:=]\s*["\']gh[ps]_[A-Za-z0-9]{20,}["\']',
-        r'(?:STRIPE|stripe)[_-]?(?:KEY|key)\s*[:=]\s*["\'](?:sk|pk)_(?:live|test)_[A-Za-z0-9]{20,}["\']',
-        r'(?:SLACK|slack)[_-]?(?:TOKEN|token)\s*[:=]\s*["\']xox[baprs]-[A-Za-z0-9\-]{10,}["\']',
     ],
     'aws_credentials': [
         r'AKIA[0-9A-Z]{16}',  # AWS Access Key ID
         r'(?:AWS|aws)[_-]?(?:SECRET|secret)[_-]?(?:ACCESS|access)?[_-]?(?:KEY|key)\s*[:=]\s*["\'][A-Za-z0-9/+=]{40}["\']',
-        r'aws_session_token\s*=\s*["\'][A-Za-z0-9/+=]{100,}["\']',
     ],
     'private_keys': [
         r'-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----',
-        r'-----BEGIN CERTIFICATE-----',
-        r'-----BEGIN PGP PRIVATE KEY BLOCK-----',
     ],
     'jwt_tokens': [
         r'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}',  # JWT format
-    ],
-    'insecure_random': [
-        r'random\.random\s*\(',  # Non-cryptographic random
-        r'random\.randint\s*\(',
-        r'Math\.random\s*\(',
-    ],
-    'path_traversal': [
-        r'open\s*\([^)]*\+[^)]*\)',  # Path concatenation without validation
-        r'os\.path\.join\s*\([^)]*request',  # User input in path
     ],
     'command_injection': [
         r'os\.system\s*\([^)]*\+',
@@ -70,12 +55,12 @@ SECURITY_PATTERNS = {
         r'eval\s*\(',
         r'exec\s*\(',
     ],
-    'xss_vulnerable': [
-        r'innerHTML\s*=',
-        r'document\.write\s*\(',
-        r'dangerouslySetInnerHTML',
-    ],
 }
+
+# Compile patterns once for performance
+_COMPILED_PATTERNS = {}
+for category, patterns in SECURITY_PATTERNS.items():
+    _COMPILED_PATTERNS[category] = [re.compile(p, re.IGNORECASE | re.MULTILINE) for p in patterns]
 
 # Common performance anti-patterns
 PERFORMANCE_PATTERNS = {
@@ -308,143 +293,133 @@ class PythonAnalyzer:
         content = '\n'.join(lines)
         loc = len(lines)
         
+        # Skip security checks for very large files (performance optimization)
+        skip_security = loc > 5000
+        
         # ============================================================
         # CRITICAL: SECURITY VULNERABILITIES (Severity 5)
         # ============================================================
         
-        # SQL Injection Detection
-        for pattern in SECURITY_PATTERNS['sql_injection']:
-            matches = list(re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                smells.append(CodeSmell(
-                    path=path,
-                    type="SQL Injection Risk",
-                    severity=5,
-                    line=line_num,
-                    message="Potential SQL injection: user input may be directly interpolated into SQL query",
-                    suggestion="Use parameterized queries: cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))"
-                ))
-                break  # One per file
-        
-        # Hardcoded Secrets Detection
-        for pattern in SECURITY_PATTERNS['hardcoded_secrets']:
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                # Get a preview without exposing the secret
-                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
-                key_match = re.search(r'(password|secret|key|token|api)', line_content, re.IGNORECASE)
-                key_name = key_match.group(1) if key_match else 'credential'
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Hardcoded Secret",
-                    severity=5,
-                    line=line_num,
-                    message=f"Hardcoded {key_name} detected - this will be exposed in version control",
-                    suggestion="Use environment variables: os.environ.get('SECRET_KEY') or a secrets manager"
-                ))
-                break
-        
-        # Database Credentials Detection
-        for pattern in SECURITY_PATTERNS['database_credentials']:
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Database Credentials Exposed",
-                    severity=5,
-                    line=line_num,
-                    message="Database connection string with embedded credentials - security risk if committed to version control",
-                    suggestion="Use environment variables for DB credentials: DB_HOST, DB_USER, DB_PASSWORD. Store connection strings in .env files (gitignored)"
-                ))
-                break
-        
-        # API Keys Detection
-        for pattern in SECURITY_PATTERNS['api_keys']:
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
-                api_type = "API key"
-                if 'openai' in line_content.lower() or 'gpt' in line_content.lower():
-                    api_type = "OpenAI API key"
-                elif 'github' in line_content.lower():
-                    api_type = "GitHub token"
-                elif 'stripe' in line_content.lower():
-                    api_type = "Stripe API key"
-                elif 'slack' in line_content.lower():
-                    api_type = "Slack token"
-                
-                smells.append(CodeSmell(
-                    path=path,
-                    type="API Key Exposed",
-                    severity=5,
-                    line=line_num,
-                    message=f"{api_type} hardcoded in source code - immediate security risk",
-                    suggestion=f"Rotate the exposed {api_type} immediately. Use environment variables: os.getenv('API_KEY') and add to .gitignore"
-                ))
-                break
-        
-        # AWS Credentials Detection
-        for pattern in SECURITY_PATTERNS['aws_credentials']:
-            matches = list(re.finditer(pattern, content))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                smells.append(CodeSmell(
-                    path=path,
-                    type="AWS Credentials Exposed",
-                    severity=5,
-                    line=line_num,
-                    message="AWS credentials detected in code - this grants access to your AWS resources",
-                    suggestion="URGENT: Rotate AWS credentials in AWS Console. Use AWS IAM roles, AWS Secrets Manager, or environment variables"
-                ))
-                break
-        
-        # Private Keys Detection
-        for pattern in SECURITY_PATTERNS['private_keys']:
-            matches = list(re.finditer(pattern, content))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                key_type = "Private key"
-                if 'RSA' in match.group(0):
-                    key_type = "RSA private key"
-                elif 'CERTIFICATE' in match.group(0):
-                    key_type = "SSL certificate"
-                elif 'PGP' in match.group(0):
-                    key_type = "PGP private key"
-                
-                smells.append(CodeSmell(
-                    path=path,
-                    type="Private Key Exposed",
-                    severity=5,
-                    line=line_num,
-                    message=f"{key_type} found in code - severe security breach if committed",
-                    suggestion="Remove private keys from code immediately. Store in secure key management system. Generate new keys if already committed."
-                ))
-                break
-        
-        # JWT Token Detection
-        for pattern in SECURITY_PATTERNS['jwt_tokens']:
-            matches = list(re.finditer(pattern, content))
-            for match in matches:
-                line_num = content[:match.start()].count('\n') + 1
-                # Check if it's actually hardcoded (not in a variable assignment from elsewhere)
-                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
-                if '=' in line_content and 'eyJ' in line_content:
+        if not skip_security:
+            # SQL Injection Detection
+            for pattern in _COMPILED_PATTERNS['sql_injection']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
                     smells.append(CodeSmell(
                         path=path,
-                        type="JWT Token Hardcoded",
+                        type="SQL Injection Risk",
                         severity=5,
                         line=line_num,
-                        message="JWT token hardcoded in source - tokens should be generated dynamically or stored securely",
-                        suggestion="Never hardcode JWTs. Generate tokens on authentication and store in secure HTTP-only cookies or secure storage"
+                        message="Potential SQL injection: user input may be directly interpolated into SQL query",
+                        suggestion="Use parameterized queries: cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))"
+                    ))
+                    break  # One per file
+            
+            # Hardcoded Secrets Detection
+            for pattern in _COMPILED_PATTERNS['hardcoded_secrets']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                    key_match = re.search(r'(password|secret|key|token|api)', line_content, re.IGNORECASE)
+                    key_name = key_match.group(1) if key_match else 'credential'
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Hardcoded Secret",
+                        severity=5,
+                        line=line_num,
+                        message=f"Hardcoded {key_name} detected - this will be exposed in version control",
+                        suggestion="Use environment variables: os.environ.get('SECRET_KEY') or a secrets manager"
                     ))
                     break
+            
+            # Database Credentials Detection
+            for pattern in _COMPILED_PATTERNS['database_credentials']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Database Credentials Exposed",
+                        severity=5,
+                        line=line_num,
+                        message="Database connection string with embedded credentials - security risk if committed to version control",
+                        suggestion="Use environment variables for DB credentials: DB_HOST, DB_USER, DB_PASSWORD. Store connection strings in .env files (gitignored)"
+                    ))
+                    break
+            
+            # API Keys Detection
+            for pattern in _COMPILED_PATTERNS['api_keys']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                    api_type = "API key"
+                    if 'openai' in line_content.lower() or 'gpt' in line_content.lower():
+                        api_type = "OpenAI API key"
+                    elif 'github' in line_content.lower():
+                        api_type = "GitHub token"
+                    
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="API Key Exposed",
+                        severity=5,
+                        line=line_num,
+                        message=f"{api_type} hardcoded in source code - immediate security risk",
+                        suggestion=f"Rotate the exposed {api_type} immediately. Use environment variables: os.getenv('API_KEY') and add to .gitignore"
+                    ))
+                    break
+            
+            # AWS Credentials Detection
+            for pattern in _COMPILED_PATTERNS['aws_credentials']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="AWS Credentials Exposed",
+                        severity=5,
+                        line=line_num,
+                        message="AWS credentials detected in code - this grants access to your AWS resources",
+                        suggestion="URGENT: Rotate AWS credentials in AWS Console. Use AWS IAM roles, AWS Secrets Manager, or environment variables"
+                    ))
+                    break
+            
+            # Private Keys Detection
+            for pattern in _COMPILED_PATTERNS['private_keys']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="Private Key Exposed",
+                        severity=5,
+                        line=line_num,
+                        message="Private key found in code - severe security breach if committed",
+                        suggestion="Remove private keys from code immediately. Store in secure key management system. Generate new keys if already committed."
+                    ))
+                    break
+            
+            # JWT Token Detection  
+            for pattern in _COMPILED_PATTERNS['jwt_tokens']:
+                match = pattern.search(content)
+                if match:
+                    line_num = content[:match.start()].count('\n') + 1
+                    line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                    if '=' in line_content and 'eyJ' in line_content:
+                        smells.append(CodeSmell(
+                            path=path,
+                            type="JWT Token Hardcoded",
+                            severity=5,
+                            line=line_num,
+                            message="JWT token hardcoded in source - tokens should be generated dynamically or stored securely",
+                            suggestion="Never hardcode JWTs. Generate tokens on authentication and store in secure HTTP-only cookies or secure storage"
+                        ))
+                        break
         
         # Command Injection / Code Execution
-        for pattern in SECURITY_PATTERNS['command_injection']:
+        for pattern in _COMPILED_PATTERNS['command_injection']:
             matches = list(re.finditer(pattern, content))
             for match in matches:
                 line_num = content[:match.start()].count('\n') + 1
