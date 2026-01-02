@@ -1,0 +1,70 @@
+# GitHub Actions Workflow Configuration
+# Place this file in .github/workflows/bugrisk-analysis.yml
+
+name: Bug Risk Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install Bug Risk NLP CLI
+        run: |
+          pip install bugrisk-cli
+      
+      - name: Run Code Analysis
+        env:
+          BUGRISK_API_KEY: ${{ secrets.BUGRISK_API_KEY }}
+          BUGRISK_PROJECT_ID: ${{ secrets.BUGRISK_PROJECT_ID }}
+        run: |
+          bugrisk scan --project=$BUGRISK_PROJECT_ID --api-key=$BUGRISK_API_KEY
+      
+      - name: Check Quality Gate
+        env:
+          BUGRISK_API_KEY: ${{ secrets.BUGRISK_API_KEY }}
+          BUGRISK_PROJECT_ID: ${{ secrets.BUGRISK_PROJECT_ID }}
+        run: |
+          QUALITY_SCORE=$(bugrisk get-score --project=$BUGRISK_PROJECT_ID --api-key=$BUGRISK_API_KEY)
+          echo "Quality Score: $QUALITY_SCORE"
+          
+          if [ "$QUALITY_SCORE" -lt "70" ]; then
+            echo "❌ Quality gate failed: Score $QUALITY_SCORE < 70"
+            exit 1
+          else
+            echo "✅ Quality gate passed: Score $QUALITY_SCORE >= 70"
+          fi
+      
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const comment = `## 🔍 Bug Risk Analysis Report
+            
+            **Quality Score:** ${process.env.QUALITY_SCORE}/100
+            **Status:** ${process.env.QUALITY_SCORE >= 70 ? '✅ Passed' : '❌ Failed'}
+            
+            View detailed report: [Dashboard](https://bugrisk.app/project/${process.env.BUGRISK_PROJECT_ID})
+            `;
+            
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: issue_number,
+              body: comment
+            });

@@ -1,0 +1,70 @@
+# GitLab CI/CD Configuration
+# Place this content in .gitlab-ci.yml
+
+stages:
+  - analyze
+  - quality-gate
+
+variables:
+  BUGRISK_API_URL: "https://api.bugrisk.app"
+
+bug_risk_analysis:
+  stage: analyze
+  image: python:3.10
+  before_script:
+    - pip install requests
+  script:
+    - |
+      python << EOF
+      import requests
+      import os
+      
+      api_key = os.environ['BUGRISK_API_KEY']
+      project_id = os.environ['BUGRISK_PROJECT_ID']
+      
+      # Trigger scan
+      response = requests.post(
+          f"${BUGRISK_API_URL}/scan/{project_id}",
+          headers={"Authorization": f"Bearer {api_key}"},
+          files={"repository": open(".", "rb")}
+      )
+      
+      print(f"Scan triggered: {response.json()}")
+      EOF
+  only:
+    - main
+    - develop
+    - merge_requests
+
+quality_gate:
+  stage: quality-gate
+  image: python:3.10
+  script:
+    - |
+      python << EOF
+      import requests
+      import os
+      import sys
+      
+      api_key = os.environ['BUGRISK_API_KEY']
+      project_id = os.environ['BUGRISK_PROJECT_ID']
+      
+      # Get quality score
+      response = requests.get(
+          f"${BUGRISK_API_URL}/metrics/{project_id}",
+          headers={"Authorization": f"Bearer {api_key}"}
+      )
+      
+      quality_score = response.json().get('quality_score', 0)
+      print(f"Quality Score: {quality_score}")
+      
+      if quality_score < 70:
+          print("❌ Quality gate failed")
+          sys.exit(1)
+      else:
+          print("✅ Quality gate passed")
+      EOF
+  only:
+    - main
+    - develop
+    - merge_requests
