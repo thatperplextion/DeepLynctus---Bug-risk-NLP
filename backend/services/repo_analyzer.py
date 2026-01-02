@@ -420,8 +420,8 @@ class PythonAnalyzer:
         
         # Command Injection / Code Execution
         for pattern in _COMPILED_PATTERNS['command_injection']:
-            matches = list(re.finditer(pattern, content))
-            for match in matches:
+            match = pattern.search(content)
+            if match:
                 line_num = content[:match.start()].count('\n') + 1
                 matched_text = match.group(0)[:20]
                 smells.append(CodeSmell(
