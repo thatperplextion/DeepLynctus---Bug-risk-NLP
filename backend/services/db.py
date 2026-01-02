@@ -277,7 +277,9 @@ class MongoDBAtlas(DatabaseInterface):
                 mongo_uri,
                 maxPoolSize=max_pool,
                 minPoolSize=min_pool,
-                serverSelectionTimeoutMS=5000
+                serverSelectionTimeoutMS=30000,
+                connectTimeoutMS=30000,
+                socketTimeoutMS=30000
             )
             self._db = self._client[db_name]
             
