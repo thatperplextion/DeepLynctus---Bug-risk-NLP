@@ -8,8 +8,8 @@ from controllers.upload_controller import router as upload_router
 from controllers.scan_controller import router as scan_router
 from controllers.metrics_controller import router as metrics_router
 from controllers.risks_controller import router as risks_router
-from controllers.smells_router import router as smells_router
-from controllers.suggestions_router import router as suggestions_router
+from controllers.smells_controller import router as smells_router
+from controllers.suggestions_controller import router as suggestions_router
 from controllers.report_controller import router as report_router
 from controllers.comparison_controller import router as comparison_router
 from controllers.notification_controller import router as notification_router
