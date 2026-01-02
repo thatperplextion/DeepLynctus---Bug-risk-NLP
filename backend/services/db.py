@@ -73,6 +73,16 @@ class DatabaseInterface(ABC):
         pass
     
     @abstractmethod
+    async def find(self, collection: str, query: Dict[str, Any], sort: List = None, limit: int = None) -> List[Dict[str, Any]]:
+        """Generic find method for any collection."""
+        pass
+    
+    @abstractmethod
+    async def insert(self, collection: str, document: Dict[str, Any]) -> str:
+        """Generic insert method for any collection."""
+        pass
+    
+    @abstractmethod
     async def connect(self) -> bool:
         pass
     
@@ -149,6 +159,85 @@ class InMemoryDB(DatabaseInterface):
         scan_data['timestamp'] = datetime.utcnow().isoformat()
         self.scan_history[project_id].append(scan_data)
         return scan_data['_id']
+    
+    async def find(self, collection: str, query: Dict[str, Any], sort: List = None, limit: int = None) -> List[Dict[str, Any]]:
+        """Generic find method for any collection."""
+        # Map collection name to internal storage
+        storage_map = {
+            "projects": self.projects,
+            "file_metrics": self.file_metrics,
+            "risks": self.risks,
+            "smells": self.smells,
+            "scan_history": self.scan_history
+        }
+        
+        storage = storage_map.get(collection, {})
+        
+        # For scan_history, which stores lists per project_id
+        if collection == "scan_history":
+            project_id = query.get("project_id")
+            results = storage.get(project_id, [])
+            
+            # Apply sorting (basic implementation)
+            if sort and len(sort) > 0:
+                field, direction = sort[0]
+                reverse = (direction == -1)
+                results = sorted(results, key=lambda x: x.get(field, ""), reverse=reverse)
+            
+            # Apply limit
+            if limit:
+                results = results[:limit]
+            
+            return results
+        
+        # For other collections, filter by query
+        results = []
+        for key, item in storage.items():
+            match = True
+            for q_key, q_value in query.items():
+                if item.get(q_key) != q_value:
+                    match = False
+                    break
+            if match:
+                results.append(item)
+        
+        # Apply sorting
+        if sort and len(sort) > 0:
+            field, direction = sort[0]
+            reverse = (direction == -1)
+            results = sorted(results, key=lambda x: x.get(field, ""), reverse=reverse)
+        
+        # Apply limit
+        if limit:
+            results = results[:limit]
+        
+        return results
+    
+    async def insert(self, collection: str, document: Dict[str, Any]) -> str:
+        """Generic insert method for any collection."""
+        # Generate unique ID
+        doc_id = str(datetime.utcnow().timestamp())
+        document['_id'] = doc_id
+        
+        if collection == "scan_history":
+            project_id = document.get("project_id")
+            if project_id:
+                if project_id not in self.scan_history:
+                    self.scan_history[project_id] = []
+                self.scan_history[project_id].append(document)
+        elif collection == "projects":
+            self.projects[doc_id] = document
+        elif collection == "file_metrics":
+            key = f"{document.get('project_id')}:{document.get('path', '')}"
+            self.file_metrics[key] = document
+        elif collection == "risks":
+            key = f"{document.get('project_id')}:{document.get('path', '')}"
+            self.risks[key] = document
+        elif collection == "smells":
+            key = f"{document.get('project_id')}:{document.get('path', '')}:{document.get('type', '')}:{document.get('line', 0)}"
+            self.smells[key] = document
+        
+        return doc_id
     
     async def connect(self) -> bool:
         print("✅ Using in-memory database")
@@ -362,6 +451,38 @@ class MongoDBAtlas(DatabaseInterface):
         scan_data['timestamp'] = datetime.utcnow()
         
         result = await self._db.scan_history.insert_one(scan_data)
+        return str(result.inserted_id)
+    
+    async def find(self, collection: str, query: Dict[str, Any], sort: List = None, limit: int = None) -> List[Dict[str, Any]]:
+        """Generic find method for any collection."""
+        if not self._connected:
+            await self.connect()
+        
+        cursor = self._db[collection].find(query)
+        
+        # Apply sorting if provided
+        if sort:
+            cursor = cursor.sort(sort)
+        
+        # Apply limit if provided
+        if limit:
+            cursor = cursor.limit(limit)
+        
+        results = await cursor.to_list(length=limit if limit else 1000)
+        
+        # Convert ObjectId to string for JSON serialization
+        for r in results:
+            if '_id' in r:
+                r['_id'] = str(r['_id'])
+        
+        return results
+    
+    async def insert(self, collection: str, document: Dict[str, Any]) -> str:
+        """Generic insert method for any collection."""
+        if not self._connected:
+            await self.connect()
+        
+        result = await self._db[collection].insert_one(document)
         return str(result.inserted_id)
 
 

@@ -85,64 +85,88 @@ async def get_trend_data(project_id: str, days: int = 30, limit: int = 50) -> Di
         "low_issues": low
     }
     
-    # Store in cache for history tracking
-    if project_id not in _trends_cache:
-        _trends_cache[project_id] = []
+    # Save current snapshot to database
+    await save_scan_snapshot(project_id, current)
     
-    # Add current snapshot to history
-    snapshot = {
-        "scan_id": f"scan_{len(_trends_cache[project_id]) + 1}",
-        "timestamp": datetime.utcnow().isoformat(),
-        "metrics": current
-    }
+    # Get historical scans from database
+    history = await get_scan_history(project_id, limit)
     
-    # Only add if different from last snapshot
-    if not _trends_cache[project_id] or _trends_cache[project_id][-1]["metrics"] != current:
-        _trends_cache[project_id].append(snapshot)
-    
-    # Calculate changes (simulated for now)
+    # Calculate changes compared to previous scan
     changes = {
         "quality_score": 0,
         "total_smells": 0,
-        "avg_risk": 0
+        "avg_risk": 0,
+        "critical_issues": 0,
+        "high_issues": 0
     }
     
-    if len(_trends_cache[project_id]) >= 2:
-        prev = _trends_cache[project_id][-2]["metrics"]
-        if prev["quality_score"] > 0:
+    if len(history) >= 2:
+        prev = history[1]["metrics"]  # Second item is previous (first is current we just added)
+        if prev.get("quality_score", 0) > 0:
             changes["quality_score"] = ((current["quality_score"] - prev["quality_score"]) / prev["quality_score"]) * 100
-        if prev["total_smells"] > 0:
+        if prev.get("total_smells", 0) > 0:
             changes["total_smells"] = ((current["total_smells"] - prev["total_smells"]) / prev["total_smells"]) * 100
-        if prev["avg_risk"] > 0:
+        if prev.get("avg_risk", 0) > 0:
             changes["avg_risk"] = ((current["avg_risk"] - prev["avg_risk"]) / prev["avg_risk"]) * 100
+        
+        changes["critical_issues"] = current["critical_issues"] - prev.get("critical_issues", 0)
+        changes["high_issues"] = current["high_issues"] - prev.get("high_issues", 0)
     
     return {
         "project_id": project_id,
         "has_data": True,
         "current": current,
         "changes": changes,
-        "scans": _trends_cache[project_id][-limit:]
+        "scans": [
+            {
+                "scan_id": h.get("scan_id"),
+                "timestamp": h.get("timestamp").isoformat() if h.get("timestamp") else None,
+                "metrics": h.get("metrics")
+            }
+            for h in history
+        ]
     }
 
 
 async def get_comparison_data(project_id: str) -> Dict[str, Any]:
     """Compare current state with previous scan."""
-    if project_id not in _trends_cache or len(_trends_cache[project_id]) < 2:
+    history = await get_scan_history(project_id, limit=2)
+    
+    if len(history) < 2:
         return {
             "has_comparison": False,
             "message": "Not enough scans for comparison. Run more analyses."
         }
     
-    current = _trends_cache[project_id][-1]
-    previous = _trends_cache[project_id][-2]
+    current = history[0]  # Most recent
+    previous = history[1]  # Previous scan
+    
+    curr_metrics = current.get("metrics", {})
+    prev_metrics = previous.get("metrics", {})
     
     return {
         "has_comparison": True,
-        "current": current,
-        "previous": previous,
+        "current": {
+            "scan_id": current.get("scan_id"),
+            "timestamp": current.get("timestamp").isoformat() if current.get("timestamp") else None,
+            "metrics": curr_metrics
+        },
+        "previous": {
+            "scan_id": previous.get("scan_id"),
+            "timestamp": previous.get("timestamp").isoformat() if previous.get("timestamp") else None,
+            "metrics": prev_metrics
+        },
         "diff": {
-            "quality_score": current["metrics"]["quality_score"] - previous["metrics"]["quality_score"],
-            "total_smells": current["metrics"]["total_smells"] - previous["metrics"]["total_smells"],
-            "files": current["metrics"]["total_files"] - previous["metrics"]["total_files"]
+            "quality_score": curr_metrics.get("quality_score", 0) - prev_metrics.get("quality_score", 0),
+            "total_smells": curr_metrics.get("total_smells", 0) - prev_metrics.get("total_smells", 0),
+            "files": curr_metrics.get("total_files", 0) - prev_metrics.get("total_files", 0),
+            "critical_issues": curr_metrics.get("critical_issues", 0) - prev_metrics.get("critical_issues", 0),
+            "high_issues": curr_metrics.get("high_issues", 0) - prev_metrics.get("high_issues", 0),
+            "avg_risk": curr_metrics.get("avg_risk", 0) - prev_metrics.get("avg_risk", 0)
+        },
+        "percent_change": {
+            "quality_score": ((curr_metrics.get("quality_score", 0) - prev_metrics.get("quality_score", 1)) / max(prev_metrics.get("quality_score", 1), 1)) * 100,
+            "total_smells": ((curr_metrics.get("total_smells", 0) - prev_metrics.get("total_smells", 1)) / max(prev_metrics.get("total_smells", 1), 1)) * 100,
+            "avg_risk": ((curr_metrics.get("avg_risk", 0) - prev_metrics.get("avg_risk", 1)) / max(prev_metrics.get("avg_risk", 1), 1)) * 100
         }
     }
