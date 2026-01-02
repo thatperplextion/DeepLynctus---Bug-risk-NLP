@@ -76,6 +76,25 @@ app.include_router(performance_router, prefix="/performance", tags=["performance
 app.include_router(ml_router, prefix="/ml", tags=["ml"])
 
 
+# ============== Projects Endpoints ==============
+@app.get("/api/projects", tags=["projects"])
+async def get_all_projects():
+    """Get all projects."""
+    try:
+        db = get_database()
+        # Get all projects from database
+        projects = []
+        if hasattr(db, 'projects'):
+            # In-memory database
+            projects = list(db.projects.values())
+        else:
+            # MongoDB database
+            projects = await db.find("projects", {})
+        return projects
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============== Dependency Graph Endpoints ==============
 @app.get("/dependencies/{project_id}", tags=["dependencies"])
 async def get_dependencies(project_id: str):
