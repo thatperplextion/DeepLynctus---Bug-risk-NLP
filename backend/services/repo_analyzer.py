@@ -30,6 +30,31 @@ SECURITY_PATTERNS = {
         r'(?:AWS|aws)_(?:SECRET|ACCESS).*=\s*["\'][A-Za-z0-9/+=]{20,}["\']',
         r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----',
     ],
+    'database_credentials': [
+        r'(?:mongodb\+srv|mysql|postgresql|postgres)://[^:]+:[^@]+@',  # DB connection strings with credentials
+        r'(?:host|server)\s*=\s*["\'][^"\']+["\'].*(?:user|username|uid)\s*=\s*["\'][^"\']+["\'].*(?:password|pwd|pass)\s*=\s*["\'][^"\']+["\']',
+        r'DATABASE_URL\s*=\s*["\'](?:mysql|postgres|mongodb)://[^"\']+["\']',
+    ],
+    'api_keys': [
+        r'(?:api[_-]?key|apikey|api[_-]?secret)\s*[:=]\s*["\'](?!(?:your|test|demo|example|xxx|000))[A-Za-z0-9_\-]{20,}["\']',
+        r'(?:OPENAI|openai|gpt)[_-]?(?:API|api)[_-]?(?:KEY|key)\s*[:=]\s*["\']sk-[A-Za-z0-9]{20,}["\']',
+        r'(?:GITHUB|github)[_-]?(?:TOKEN|token|PAT)\s*[:=]\s*["\']gh[ps]_[A-Za-z0-9]{20,}["\']',
+        r'(?:STRIPE|stripe)[_-]?(?:KEY|key)\s*[:=]\s*["\'](?:sk|pk)_(?:live|test)_[A-Za-z0-9]{20,}["\']',
+        r'(?:SLACK|slack)[_-]?(?:TOKEN|token)\s*[:=]\s*["\']xox[baprs]-[A-Za-z0-9\-]{10,}["\']',
+    ],
+    'aws_credentials': [
+        r'AKIA[0-9A-Z]{16}',  # AWS Access Key ID
+        r'(?:AWS|aws)[_-]?(?:SECRET|secret)[_-]?(?:ACCESS|access)?[_-]?(?:KEY|key)\s*[:=]\s*["\'][A-Za-z0-9/+=]{40}["\']',
+        r'aws_session_token\s*=\s*["\'][A-Za-z0-9/+=]{100,}["\']',
+    ],
+    'private_keys': [
+        r'-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----',
+        r'-----BEGIN CERTIFICATE-----',
+        r'-----BEGIN PGP PRIVATE KEY BLOCK-----',
+    ],
+    'jwt_tokens': [
+        r'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}',  # JWT format
+    ],
     'insecure_random': [
         r'random\.random\s*\(',  # Non-cryptographic random
         r'random\.randint\s*\(',
@@ -320,6 +345,103 @@ class PythonAnalyzer:
                     suggestion="Use environment variables: os.environ.get('SECRET_KEY') or a secrets manager"
                 ))
                 break
+        
+        # Database Credentials Detection
+        for pattern in SECURITY_PATTERNS['database_credentials']:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Database Credentials Exposed",
+                    severity=5,
+                    line=line_num,
+                    message="Database connection string with embedded credentials - security risk if committed to version control",
+                    suggestion="Use environment variables for DB credentials: DB_HOST, DB_USER, DB_PASSWORD. Store connection strings in .env files (gitignored)"
+                ))
+                break
+        
+        # API Keys Detection
+        for pattern in SECURITY_PATTERNS['api_keys']:
+            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                api_type = "API key"
+                if 'openai' in line_content.lower() or 'gpt' in line_content.lower():
+                    api_type = "OpenAI API key"
+                elif 'github' in line_content.lower():
+                    api_type = "GitHub token"
+                elif 'stripe' in line_content.lower():
+                    api_type = "Stripe API key"
+                elif 'slack' in line_content.lower():
+                    api_type = "Slack token"
+                
+                smells.append(CodeSmell(
+                    path=path,
+                    type="API Key Exposed",
+                    severity=5,
+                    line=line_num,
+                    message=f"{api_type} hardcoded in source code - immediate security risk",
+                    suggestion=f"Rotate the exposed {api_type} immediately. Use environment variables: os.getenv('API_KEY') and add to .gitignore"
+                ))
+                break
+        
+        # AWS Credentials Detection
+        for pattern in SECURITY_PATTERNS['aws_credentials']:
+            matches = list(re.finditer(pattern, content))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                smells.append(CodeSmell(
+                    path=path,
+                    type="AWS Credentials Exposed",
+                    severity=5,
+                    line=line_num,
+                    message="AWS credentials detected in code - this grants access to your AWS resources",
+                    suggestion="URGENT: Rotate AWS credentials in AWS Console. Use AWS IAM roles, AWS Secrets Manager, or environment variables"
+                ))
+                break
+        
+        # Private Keys Detection
+        for pattern in SECURITY_PATTERNS['private_keys']:
+            matches = list(re.finditer(pattern, content))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                key_type = "Private key"
+                if 'RSA' in match.group(0):
+                    key_type = "RSA private key"
+                elif 'CERTIFICATE' in match.group(0):
+                    key_type = "SSL certificate"
+                elif 'PGP' in match.group(0):
+                    key_type = "PGP private key"
+                
+                smells.append(CodeSmell(
+                    path=path,
+                    type="Private Key Exposed",
+                    severity=5,
+                    line=line_num,
+                    message=f"{key_type} found in code - severe security breach if committed",
+                    suggestion="Remove private keys from code immediately. Store in secure key management system. Generate new keys if already committed."
+                ))
+                break
+        
+        # JWT Token Detection
+        for pattern in SECURITY_PATTERNS['jwt_tokens']:
+            matches = list(re.finditer(pattern, content))
+            for match in matches:
+                line_num = content[:match.start()].count('\n') + 1
+                # Check if it's actually hardcoded (not in a variable assignment from elsewhere)
+                line_content = lines[line_num - 1] if line_num <= len(lines) else ''
+                if '=' in line_content and 'eyJ' in line_content:
+                    smells.append(CodeSmell(
+                        path=path,
+                        type="JWT Token Hardcoded",
+                        severity=5,
+                        line=line_num,
+                        message="JWT token hardcoded in source - tokens should be generated dynamically or stored securely",
+                        suggestion="Never hardcode JWTs. Generate tokens on authentication and store in secure HTTP-only cookies or secure storage"
+                    ))
+                    break
         
         # Command Injection / Code Execution
         for pattern in SECURITY_PATTERNS['command_injection']:
@@ -1143,14 +1265,24 @@ class RepoAnalyzer:
             critical_smells = [s for s in file_smells if s.severity >= 4]
             critical_types = set(s.type for s in critical_smells)
             
+            # Security vulnerabilities get highest priority
+            security_smells = {'SQL Injection Risk', 'Hardcoded Secret', 'Database Credentials Exposed',
+                             'API Key Exposed', 'AWS Credentials Exposed', 'Private Key Exposed',
+                             'JWT Token Hardcoded', 'Code Injection Risk', 'XSS Vulnerability'}
+            security_count = sum(1 for s in critical_smells if s.type in security_smells)
+            
             # Weight certain smell types higher - Long Function is NOT high risk
             high_risk_smells = {'Callback Hell', 'Empty Catch Block', 'Potential Memory Leak', 
-                               'High Complexity', 'God Class', 'SQL Injection', 'XSS Vulnerability',
-                               'Hardcoded Credentials', 'Command Injection'}
+                               'High Complexity', 'God Class', 'N+1 Query Problem',
+                               'Blocking Call in Async', 'Resource Leak Risk'}
             # Long Function is excluded - it's just style, not a bug risk
             high_risk_count = sum(1 for s in critical_smells if s.type in high_risk_smells)
             
-            if high_risk_count >= 3:
+            # Security issues add maximum risk
+            if security_count > 0:
+                score += 30  # Security issues are critical
+                top_features.append(f"security_vulnerabilities_{security_count}")
+            elif high_risk_count >= 3:
                 score += 25
                 top_features.append("multiple_critical_issues")
             elif high_risk_count >= 2:
