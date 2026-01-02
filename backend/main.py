@@ -14,6 +14,7 @@ from controllers.report_controller import router as report_router
 from controllers.comparison_controller import router as comparison_router
 from controllers.notification_controller import router as notification_router
 from controllers.user_controller import router as user_router
+from controllers.search_controller import router as search_router
 from services.db import get_database
 from services.dependency_service import get_dependency_graph
 from services.history_service import get_trend_data, get_comparison_data
@@ -62,6 +63,7 @@ app.include_router(report_router, prefix="/report", tags=["report"])
 app.include_router(comparison_router, prefix="/comparison", tags=["comparison"])
 app.include_router(notification_router, prefix="/notifications", tags=["notifications"])
 app.include_router(user_router, prefix="/users", tags=["users"])
+app.include_router(search_router, prefix="/search", tags=["search"])
 
 
 # ============== Dependency Graph Endpoints ==============
