@@ -31,13 +31,13 @@ SECURITY_PATTERNS = {
         r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----',
     ],
     'database_credentials': [
-        r'(?:mongodb\+srv|mysql|postgresql|postgres)://[^:]+:[^@]+@',  # DB connection strings with credentials
-        r'DATABASE_URL\s*=\s*["\'](?:mysql|postgres|mongodb)://[^"\']+["\']',
+        r'(?:mongodb\+srv|mysql|postgresql|postgres)://[^:"\s]+:[^@"\s]{4,}@[a-z0-9.-]+',  # Real connection strings
+        r'DATABASE_URL\s*=\s*["\'](?:mysql|postgres|mongodb)://[^"\',\s]+:[^@"\s]+@[^"\s]+["\']',  # Complete URLs only
     ],
     'api_keys': [
-        r'(?:api[_-]?key|apikey|api[_-]?secret)\s*[:=]\s*["\'](?!(?:your|test|demo|example|xxx|000))[A-Za-z0-9_\-]{20,}["\']',
-        r'(?:OPENAI|openai|gpt)[_-]?(?:API|api)[_-]?(?:KEY|key)\s*[:=]\s*["\']sk-[A-Za-z0-9]{20,}["\']',
-        r'(?:GITHUB|github)[_-]?(?:TOKEN|token|PAT)\s*[:=]\s*["\']gh[ps]_[A-Za-z0-9]{20,}["\']',
+        r'(?:api[_-]?key|apikey|api[_-]?secret)\s*[:=]\s*["\'](?!(?:your|test|demo|example|xxx|000|null|none|<|\$|\{))[A-Za-z0-9_\-]{32,}["\']',  # 32+ chars, exclude placeholders
+        r'(?:OPENAI|openai|gpt)[_-]?(?:API|api)[_-]?(?:KEY|key)\s*[:=]\s*["\']sk-[A-Za-z0-9]{40,}["\']',  # Real OpenAI keys are longer
+        r'(?:GITHUB|github)[_-]?(?:TOKEN|token|PAT)\s*[:=]\s*["\']gh[ps]_[A-Za-z0-9]{36,}["\']',  # Real GitHub tokens are 36+
     ],
     'aws_credentials': [
         r'AKIA[0-9A-Z]{16}',  # AWS Access Key ID
@@ -50,10 +50,10 @@ SECURITY_PATTERNS = {
         r'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}',  # JWT format
     ],
     'command_injection': [
-        r'os\.system\s*\([^)]*\+',
-        r'subprocess\.(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True',
-        r'eval\s*\(',
-        r'exec\s*\(',
+        r'os\.system\s*\([^)]*[\+%].*input',  # Only if concatenating with user input
+        r'subprocess\.(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True[^)]*(?:input|request|param)',  # Only with user input
+        r'eval\s*\((?:input|request|param)',  # Only with user input
+        r'exec\s*\((?:input|request|param)',  # Only with user input
     ],
 }
 

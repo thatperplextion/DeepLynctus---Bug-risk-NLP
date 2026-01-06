@@ -179,7 +179,15 @@ class ComparisonService:
         
         # Filter by date range
         cutoff_date = datetime.utcnow() - timedelta(days=days)
-        scans = [s for s in scans if datetime.fromisoformat(s.get("timestamp", "")) > cutoff_date]
+        filtered_scans = []
+        for s in scans:
+            try:
+                ts = s.get("timestamp", "")
+                if ts and datetime.fromisoformat(ts.replace("Z", "+00:00")) > cutoff_date:
+                    filtered_scans.append(s)
+            except (ValueError, AttributeError):
+                continue
+        scans = filtered_scans
         
         timeline_data = []
         for scan in sorted(scans, key=lambda x: x.get("timestamp", "")):

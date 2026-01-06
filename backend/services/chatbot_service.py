@@ -26,7 +26,8 @@ class CodeReviewChatbot:
         
     async def load_context(self):
         """Load project context for the chatbot, filtering for important issues only."""
-        from services.db import db
+        from services.db import get_database
+        db = get_database()
         
         project = await db.get_project(self.project_id)
         if project:
