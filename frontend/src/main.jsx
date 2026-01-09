@@ -11,6 +11,7 @@ import TrendsDashboard from './pages/TrendsDashboard'
 import ChatBot from './pages/ChatBot'
 import ComparisonView from './pages/ComparisonView'
 import TimelineAnalysis from './pages/TimelineAnalysis'
+import ProjectComparison from './pages/ProjectComparison'
 import BackendStatus from './components/BackendStatus'
 
 const NAV_ITEMS = [
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { id: 'dependencies', label: 'Graph', icon: '🔗' },
   { id: 'trends', label: 'Trends', icon: '📈' },
   { id: 'comparison', label: 'Comparison', icon: '⚖️' },
+  { id: 'project-compare', label: 'Compare', icon: '🆚' },
   { id: 'timeline', label: 'Timeline', icon: '⏳' },
   { id: 'chat', label: 'AI Chat', icon: '🤖' }
 ]
@@ -170,6 +172,16 @@ function App(){
               exit={{ opacity: 0, x: 20 }}
             >
               <TimelineAnalysis projectId={projectId} />
+            </motion.div>
+          )}
+          {currentPage === 'project-compare' && (
+            <motion.div
+              key="project-compare"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <ProjectComparison />
             </motion.div>
           )}
           {currentPage === 'chat' && (
