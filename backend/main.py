@@ -12,6 +12,7 @@ from controllers.smells_controller import router as smells_router
 from controllers.suggestions_controller import router as suggestions_router
 from controllers.report_controller import router as report_router
 from controllers.comparison_controller import router as comparison_router
+from controllers.project_comparison_controller import router as project_comparison_router
 from controllers.notification_controller import router as notification_router
 from controllers.user_controller import router as user_router
 from controllers.search_controller import router as search_router
