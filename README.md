@@ -48,6 +48,22 @@ It combines static analysis, ML prediction, and NLP patterns, along with visual 
 
 ### ✔ PDF Summary Report
 - Risk overview
+
+### ✔ Project Comparison (NEW!)
+- Compare two projects side-by-side
+- Quality score differences
+- Complexity analysis comparison
+- Security issue comparison
+- Winner determination with weighted scoring
+- Detailed breakdowns for all metrics
+
+### ✔ Browser Extension (NEW!)
+- Chrome extension for GitHub integration
+- One-click repository analysis from GitHub
+- Inject "Analyze with Deep Lynctus" button on repo pages
+- Real-time analysis progress
+- Auto-open results in dashboard
+- Configure custom backend URL
 - Top hotspots
 - Improvement actions
 
@@ -249,6 +265,66 @@ codesensex/
 | `/risks/{project_id}` | GET | Get risk scores |
 | `/suggestions/{file_id}` | GET | Get AI suggestions |
 | `/report/export` | POST | Generate PDF report |
+
+---
+
+## 🆚 Using Project Comparison
+
+The comparison feature allows you to objectively compare two projects:
+
+1. **Navigate** to the Compare page (🆚 icon in navigation)
+2. **Select** Project A from the dropdown
+3. **Select** Project B from the dropdown
+4. **Click** "Compare Projects ⚖️"
+5. **View** side-by-side comparison:
+   - Quality scores
+   - Total files and LOC
+   - Average complexity
+   - Critical and high-risk issues
+   - Winner determination
+   - Detailed breakdowns
+
+**API Endpoint:**
+```bash
+GET /projects/compare/{project_a_id}/vs/{project_b_id}
+```
+
+---
+
+## 🧩 Browser Extension Setup
+
+### Installation
+
+1. **Open Chrome** and navigate to `chrome://extensions/`
+2. **Enable** "Developer mode" (toggle in top-right)
+3. **Click** "Load unpacked"
+4. **Select** the `browser-extension` folder
+5. **Done!** Extension icon appears in toolbar
+
+### Configuration
+
+1. **Click** the extension icon
+2. **Scroll** to "Backend API URL"
+3. **Enter** your backend URL (default: `http://localhost:8000`)
+4. **Click** "Save Settings"
+
+### Usage from GitHub
+
+1. **Visit** any GitHub repository
+2. **Look for** the "Analyze with Deep Lynctus 🧠" button
+3. **Click** to start analysis
+4. **Wait** 1-2 minutes for processing
+5. **View** results automatically in dashboard
+
+### Usage from Popup
+
+1. **Navigate** to a GitHub repository
+2. **Click** extension icon in toolbar
+3. **Click** "🚀 Analyze Repository"
+4. **View** metrics in popup
+5. **Click** "View Full Report" for details
+
+See [browser-extension/README.md](browser-extension/README.md) for more details.
 
 ---
 
