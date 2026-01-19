@@ -1,6 +1,16 @@
 """
 Advanced Search and Filtering Service
-Smart search across files with custom filters and saved patterns
+
+Provides smart search capabilities across project files with custom filters,
+saved patterns, and complex query support. Enables users to quickly locate
+code segments, issues, or patterns within analyzed repositories.
+
+Features:
+    - Full-text search across files
+    - Regex pattern matching
+    - Custom filter conditions (severity, type, file patterns)
+    - Saved search templates for reuse
+    - Multi-criteria filtering
 """
 
 from typing import List, Dict, Optional, Any
@@ -9,7 +19,14 @@ import re
 
 
 class SearchFilter:
-    """Represents a search filter configuration"""
+    """
+    Represents a search filter configuration for saved searches.
+    
+    Attributes:
+        name (str): User-friendly name for the filter
+        conditions (Dict): Filter criteria and parameters
+        created_at (datetime): Timestamp when filter was created
+    """
     
     def __init__(self, name: str, conditions: Dict):
         self.name = name
