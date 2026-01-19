@@ -102,8 +102,9 @@ class ProjectComparisonService:
         avg_risk = sum(r.get("risk_score", 0) for r in risks) / len(risks) if risks else 0
         quality_score = 100 - avg_risk
         
-        critical_issues = sum(1 for s in smells if s.get("severity", "").lower() == "critical")
-        high_issues = sum(1 for s in smells if s.get("severity", "").lower() == "high")
+        # Handle severity as string or int
+        critical_issues = sum(1 for s in smells if str(s.get("severity", "")).lower() == "critical")
+        high_issues = sum(1 for s in smells if str(s.get("severity", "")).lower() == "high")
         
         return {
             "total_files": len(metrics),
