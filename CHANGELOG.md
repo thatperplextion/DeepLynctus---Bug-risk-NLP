@@ -4,6 +4,8 @@ All notable changes to Deep Lynctus will be documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+
 ## [2.0.0] - 2026-01-09
 
 ### Added - Major Features
