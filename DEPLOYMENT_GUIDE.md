@@ -73,6 +73,8 @@ VITE_API_URL=https://your-backend.render.com
 - [ ] Enable authentication
 - [ ] Review security scanning results
 
+For a full security checklist, see SYSTEM_HEALTH_CHECK.md.
+
 ### Performance
 - [ ] Enable caching
 - [ ] Configure CDN
