@@ -158,6 +158,8 @@ components/
 pages/
 charts/
 
+Top-level layout only; actual contents can include additional files.
+
 yaml
 Copy code
 
