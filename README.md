@@ -170,6 +170,7 @@ Copy code
 - Risk heatmap
 - File-risk ranking
 - Complexity-vs-risk graph
+- Trend overview charts
 - Code smell stats
 - Overall quality score
 
