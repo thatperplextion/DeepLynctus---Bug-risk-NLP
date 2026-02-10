@@ -6,6 +6,7 @@ All notable changes to Deep Lynctus will be documented in this file.
 
 ### Documentation
 - Minor README wording updates
+- Deployment guide clarifications
 
 ## [2.0.0] - 2026-01-09
 
