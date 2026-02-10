@@ -141,6 +141,8 @@ Stores repo data, metrics, smell reports, and ML scores.
 | GET | `/suggestions/:file` | Refactor tips |
 | GET | `/report/export/:id` | PDF report |
 
+All endpoints return JSON unless noted otherwise.
+
 ---
 
 ## 📁 Suggested Folder Structure
