@@ -173,6 +173,8 @@ Copy code
 
 ## 🧩 Setup
 
+Commands below assume you are in the repository root.
+
 ```bash
 # Backend
 cd backend
