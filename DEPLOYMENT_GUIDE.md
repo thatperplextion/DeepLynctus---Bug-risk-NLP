@@ -6,6 +6,8 @@
 - MongoDB Atlas account or local MongoDB
 - Git
 
+For best results, use a Python virtual environment (venv) for backend dependencies.
+
 ## Backend Deployment (Render/Railway/Heroku)
 
 ### Step 1: Prepare Backend
