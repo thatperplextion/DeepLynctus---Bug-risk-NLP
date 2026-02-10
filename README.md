@@ -9,6 +9,7 @@ It combines static analysis, ML prediction, and NLP patterns, along with visual 
 
 - **Node.js** 18+ & npm
 - **Python** 3.10+
+- Optional: use a Python virtual environment (venv)
 - **MongoDB** (optional – uses in-memory DB by default)
 
 ## 🚀 Features
