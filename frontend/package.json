@@ -1,8 +1,11 @@
 {
   "name": "deeplynctus-frontend",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Frontend interface for DeepLynctus AI-powered code quality analyzer",
   "private": true,
   "type": "module",
+  "author": "DeepLynctus Team",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
