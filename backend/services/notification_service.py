@@ -3,7 +3,7 @@ Notification Service
 Handles real-time alerts, email notifications, and third-party integrations
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 import asyncio
 from enum import Enum
@@ -30,10 +30,10 @@ class NotificationChannel(Enum):
 class NotificationService:
     """Manages notifications across multiple channels"""
     
-    def __init__(self, db):
+    def __init__(self, db) -> None:
         self.db = db
-        self.subscribers = {}
-        self.notification_history = []
+        self.subscribers: Dict[str, Dict[str, Any]] = {}
+        self.notification_history: List[Dict[str, Any]] = []
         
     async def subscribe(self, project_id: str, user_id: str, channels: List[str], 
                        notification_types: List[str]):
