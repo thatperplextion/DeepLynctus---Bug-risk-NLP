@@ -1,6 +1,20 @@
 # Bug-Risk-NLP Usage Examples
 
-This directory contains practical examples for using the Bug-Risk-NLP platform.
+This directory contains practical examples and use cases for the Bug-Risk-NLP platform.
+Each example demonstrates different features and integration patterns for automated code quality analysis.
+
+## Table of Contents
+
+- [Basic Code Scanning](#basic-code-scanning)
+- [Advanced Configuration](#advanced-configuration)
+- [API Integration Examples](#api-integration-examples)
+- [Performance Testing](#performance-testing)
+
+## Prerequisites
+
+- Python 3.10+
+- Backend server running on `http://localhost:8000`
+- Sample projects or repositories for analysis
 
 ## Quick Start Examples
 
