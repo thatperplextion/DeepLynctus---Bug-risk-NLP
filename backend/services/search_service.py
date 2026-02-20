@@ -35,11 +35,26 @@ class SearchFilter:
 
 
 class SearchService:
-    """Handles advanced search and filtering operations"""
+    """
+    Handles advanced search and filtering operations.
     
-    def __init__(self, db):
+    This service provides comprehensive search capabilities across project files,
+    including full-text search, pattern matching, and custom filtering.
+    
+    Attributes:
+        db: Database connection instance for data operations
+        saved_filters (Dict): Storage for user-defined search filters
+    """
+    
+    def __init__(self, db) -> None:
+        """
+        Initialize the SearchService with a database connection.
+        
+        Args:
+            db: Database instance for performing search operations
+        """
         self.db = db
-        self.saved_filters = {}
+        self.saved_filters: Dict[str, SearchFilter] = {}
     
     async def search_files(self, project_id: str, query: str, 
                           filters: Optional[Dict] = None) -> List[Dict]:
