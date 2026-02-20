@@ -17,6 +17,12 @@ from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 import re
 
+# Search scoring constants
+FILENAME_MATCH_SCORE = 10
+FILENAME_EXACT_MATCH_BONUS = 5
+FILETYPE_MATCH_SCORE = 5
+ISSUE_MATCH_SCORE = 3
+
 
 class SearchFilter:
     """
@@ -98,18 +104,18 @@ class SearchService:
             # Check file name
             file_name = file.get('path', '').lower()
             if query_lower in file_name:
-                score += 10
+                score += FILENAME_MATCH_SCORE
                 if file_name.endswith(query_lower):
-                    score += 5
+                    score += FILENAME_EXACT_MATCH_BONUS
             
             # Check file type
             if query_lower in file.get('type', '').lower():
-                score += 5
+                score += FILETYPE_MATCH_SCORE
             
             # Check issues/smells
             for issue in file.get('issues', []):
                 if query_lower in issue.get('message', '').lower():
-                    score += 3
+                    score += ISSUE_MATCH_SCORE
             
             if score > 0:
                 file['relevance_score'] = score
