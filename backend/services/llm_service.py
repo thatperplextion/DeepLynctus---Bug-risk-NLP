@@ -1,4 +1,8 @@
 from .db import get_database
+import logging
+
+# Configure logger for LLM service
+logger = logging.getLogger(__name__)
 
 
 class LLMService:
@@ -787,7 +791,11 @@ if elapsed > CACHE_TTL_SECONDS:
                 })
                 smells = await cursor.to_list(length=100)
         except Exception as e:
-            print(f"Error fetching smells for suggestions: {e}")
+            logger.error(
+                f"Error fetching smells for suggestions - "
+                f"project: {project_id}, file: {file_id}, error: {e}",
+                exc_info=True
+            )
             smells = []
         
         suggestions = []
