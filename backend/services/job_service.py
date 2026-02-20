@@ -1,12 +1,13 @@
 from datetime import datetime
 import sys
+from typing import Dict, Any
 from .db import get_database
 from .repo_analyzer import repo_analyzer
 
 
 class JobService:
     @staticmethod
-    async def start_scan(project_id: str, options: dict) -> dict:
+    async def start_scan(project_id: str, options: Dict[str, Any]) -> Dict[str, Any]:
         """
         Start a scan for the given project.
         
