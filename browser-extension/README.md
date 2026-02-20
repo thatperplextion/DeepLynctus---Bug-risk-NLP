@@ -1,14 +1,24 @@
 # Deep Lynctus Browser Extension
 
-AI-powered code quality analyzer for GitHub repositories. Analyze any public repository directly from your browser!
+AI-powered code quality analyzer for GitHub repositories. Analyze any public repository directly from your browser with machine learning-based bug prediction and NLP-powered code smell detection.
 
-## Features
+## 🌟 Key Features
 
 - 🧠 **One-Click Analysis**: Analyze any GitHub repository with a single click
 - 📊 **Instant Insights**: Get quality scores, complexity metrics, and issue detection
+- 🤖 **AI-Powered Detection**: Machine learning models predict bug-prone files
+- 🔍 **NLP Analysis**: Natural language processing for code smell identification
 - 🎨 **Beautiful UI**: Glassmorphic design with smooth animations
 - ⚡ **Fast Integration**: Seamlessly integrates into GitHub's interface
 - 🔒 **Privacy-Focused**: Analysis happens on your configured backend
+- 📈 **Real-time Results**: See analysis results as they're processed
+
+## ⚡ Quick Start
+
+1. Install the extension in your browser
+2. Navigate to any GitHub repository
+3. Click the DeepLynctus icon that appears
+4. View comprehensive analysis results instantly
 
 ## Installation
 
