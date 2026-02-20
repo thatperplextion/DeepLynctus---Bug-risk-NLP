@@ -4,7 +4,11 @@ Focuses on critical and high-priority issues while ignoring minor warnings.
 """
 
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+import logging
+
+# Configure logger for chatbot service
+logger = logging.getLogger(__name__)
 
 
 class CodeReviewChatbot:
