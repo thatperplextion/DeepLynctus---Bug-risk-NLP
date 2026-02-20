@@ -50,6 +50,20 @@ class DependencyAnalyzer:
         }
     
     def _build_file_index(self, files: List[Path]) -> Dict[str, Path]:
+        """
+        Build an index mapping file names and paths to their full Path objects.
+        
+        This creates multiple mappings for each file to support various import patterns:
+        - By file stem (filename without extension)
+        - By relative path from repo root
+        - By module-style dotted path
+        
+        Args:
+            files: List of file Path objects to index
+            
+        Returns:
+            Dict mapping various file identifiers to their Path objects
+        """
         index = {}
         for f in files:
             name = f.stem
