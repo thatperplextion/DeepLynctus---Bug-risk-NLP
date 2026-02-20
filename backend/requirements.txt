@@ -1,6 +1,9 @@
-# CodeSenseX Backend Dependencies
+# =============================================================================
+# DeepLynctus Backend Dependencies
+# AI-Powered Code Quality & Bug Risk Analysis Platform
+# =============================================================================
 
-# Core Framework
+# Core Framework & Web Server
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 pydantic==2.9.0
@@ -8,11 +11,11 @@ pydantic[email]==2.9.0
 email-validator==2.1.0
 python-multipart==0.0.9
 
-# Database
-motor==3.5.1  # Async MongoDB driver
-pymongo==4.8.0
+# Database Drivers
+motor==3.5.1        # Async MongoDB driver
+pymongo==4.8.0      # MongoDB driver
 
-# ML & Analysis
+# Machine Learning & Data Analysis
 scikit-learn==1.5.1
 xgboost==2.1.0
 numpy==1.26.4
