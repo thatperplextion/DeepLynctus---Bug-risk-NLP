@@ -13,7 +13,7 @@ Features:
     - Multi-criteria filtering
 """
 
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 import re
 
@@ -24,14 +24,14 @@ class SearchFilter:
     
     Attributes:
         name (str): User-friendly name for the filter
-        conditions (Dict): Filter criteria and parameters
+        conditions (Dict[str, Any]): Filter criteria and parameters
         created_at (datetime): Timestamp when filter was created
     """
     
-    def __init__(self, name: str, conditions: Dict):
-        self.name = name
-        self.conditions = conditions
-        self.created_at = datetime.utcnow()
+    def __init__(self, name: str, conditions: Dict[str, Any]) -> None:
+        self.name: str = name
+        self.conditions: Dict[str, Any] = conditions
+        self.created_at: datetime = datetime.utcnow()
 
 
 class SearchService:
