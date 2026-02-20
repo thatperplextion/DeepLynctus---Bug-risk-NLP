@@ -6,6 +6,14 @@ Model explainability, custom thresholds, and anomaly detection
 from typing import Dict, List, Optional
 import numpy as np
 
+# Feature weight constants for risk score explanation
+COMPLEXITY_WEIGHT = 0.25
+CODE_SMELLS_WEIGHT = 0.20
+DEPENDENCIES_WEIGHT = 0.15
+TEST_COVERAGE_WEIGHT = -0.10  # Negative means it reduces risk
+CODE_DUPLICATION_WEIGHT = 0.18
+RECENT_CHANGES_WEIGHT = 0.12
+
 
 class MLEnhancementService:
     """Enhanced ML capabilities for bug risk prediction"""
@@ -23,13 +31,12 @@ class MLEnhancementService:
         """
         # Simulated feature contributions
         features = {
-            "complexity": 0.25,
-            "code_smells": 0.20,
-            "dependencies": 0.15,
-            "test_coverage": -0.10,  # Negative means it reduces risk
-            "code_duplication": 0.18,
-            "lines_of_code": 0.12,
-            "recent_changes": 0.10
+            "complexity": COMPLEXITY_WEIGHT,
+            "code_smells": CODE_SMELLS_WEIGHT,
+            "dependencies": DEPENDENCIES_WEIGHT,
+            "test_coverage": TEST_COVERAGE_WEIGHT,
+            "code_duplication": CODE_DUPLICATION_WEIGHT,
+            "recent_changes": RECENT_CHANGES_WEIGHT
         }
         
         # Normalize to match risk score
