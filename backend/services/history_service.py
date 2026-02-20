@@ -7,7 +7,22 @@ from typing import Dict, List, Any
 
 
 async def save_scan_snapshot(project_id: str, metrics: Dict[str, Any]) -> str:
-    """Save a scan snapshot to the database."""
+    """
+    Save a scan snapshot to the database for historical tracking.
+    
+    Creates a timestamped snapshot of project metrics to enable
+    trend analysis and quality monitoring over time.
+    
+    Args:
+        project_id: Unique identifier for the project
+        metrics: Dictionary containing scan metrics and analysis results
+        
+    Returns:
+        str: Generated scan ID for the saved snapshot
+        
+    Raises:
+        Exception: If database save operation fails
+    """
     from services.db import db
     
     snapshot = {
