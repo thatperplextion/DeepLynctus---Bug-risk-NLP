@@ -1,9 +1,21 @@
+"""
+DeepLynctus Backend Application
+
+AI-powered code quality and bug risk analysis platform.
+Provides comprehensive static analysis, machine learning predictions,
+and NLP-based code smell detection through a RESTful API.
+
+This application serves as the main entry point for the backend services,
+handling authentication, request routing, and coordinating various analysis modules.
+"""
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
+# Import all controller routers
 from controllers.upload_controller import router as upload_router
 from controllers.scan_controller import router as scan_router
 from controllers.metrics_controller import router as metrics_router
@@ -21,6 +33,8 @@ from controllers.analytics_controller import router as analytics_router
 from controllers.integration_controller import router as integration_router
 from controllers.performance_controller import router as performance_router
 from controllers.ml_controller import router as ml_router
+
+# Import core services
 from services.db import get_database
 from services.dependency_service import get_dependency_graph
 from services.history_service import get_trend_data, get_comparison_data
