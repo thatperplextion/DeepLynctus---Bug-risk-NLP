@@ -12,6 +12,13 @@
     "prepublish": "npm run build"
   },
   "keywords": [
+    "bug-detection",
+    "ai-analysis",
+    "nlp",
+    "static-analysis",
+    "code-smells",
+    "technical-debt",
+    "machine-learning",
     "code-quality",
     "static-analysis",
     "bug-detection",
