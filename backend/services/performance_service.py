@@ -9,14 +9,15 @@ import hashlib
 
 
 class CacheService:
-    """In-memory cache with TTL"""
+    """In-memory cache with TTL support."""
     
-    def __init__(self, ttl_seconds: int = 3600):
-        self.cache = {}
-        self.ttl = ttl_seconds
+    def __init__(self, ttl_seconds: int = 3600) -> None:
+        """Initialize cache with default TTL."""
+        self.cache: Dict[str, Dict] = {}
+        self.ttl: int = ttl_seconds
     
     def get(self, key: str) -> Optional[Dict]:
-        """Get value from cache"""
+        """Get value from cache if not expired."""
         if key not in self.cache:
             return None
         
@@ -27,8 +28,8 @@ class CacheService:
         
         return entry["value"]
     
-    def set(self, key: str, value: Dict, ttl: Optional[int] = None):
-        """Set value in cache with TTL"""
+    def set(self, key: str, value: Dict, ttl: Optional[int] = None) -> None:
+        """Set value in cache with specified or default TTL."""
         ttl = ttl or self.ttl
         self.cache[key] = {
             "value": value,
@@ -36,8 +37,8 @@ class CacheService:
             "created_at": datetime.utcnow()
         }
     
-    def delete(self, key: str):
-        """Delete key from cache"""
+    def delete(self, key: str) -> None:
+        """Delete specified key from cache."""
         if key in self.cache:
             del self.cache[key]
     
