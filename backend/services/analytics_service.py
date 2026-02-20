@@ -1,7 +1,27 @@
+"""
+Analytics Service Module
+
+Provides comprehensive analytics and metrics functionality for project analysis.
+Handles data aggregation, metric calculation, and reporting for code quality insights.
+
+This module processes project metrics including:
+    - Code complexity metrics
+    - Quality indicators
+    - Performance statistics
+    - Risk assessment data
+"""
+
 from .db import get_database
 import traceback
 
+
 class AnalyticsService:
+    """
+    Service for handling analytics and metrics operations.
+    
+    Provides methods for fetching, processing, and aggregating various metrics
+    related to code quality, complexity, and risk assessment for projects.
+    """
     @staticmethod
     async def fetch_metrics(project_id: str, limit: int, sort: str | None):
         try:
