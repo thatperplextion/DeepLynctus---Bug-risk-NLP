@@ -6,6 +6,17 @@ Handles GitHub Actions, GitLab CI/CD, Jira, and Webhook integrations
 from typing import Dict, List, Optional
 import json
 
+# Integration type constants
+GITHUB_INTEGRATION = "github"
+GITLAB_INTEGRATION = "gitlab"
+JIRA_INTEGRATION = "jira"
+WEBHOOK_INTEGRATION = "webhook"
+
+# Default configuration constants
+DEFAULT_BRANCHES = ["main", "develop"]
+DEFAULT_PR_ENABLED = True
+DEFAULT_PUSH_ENABLED = True
+
 
 class IntegrationService:
     """Manages external integrations"""
@@ -18,15 +29,15 @@ class IntegrationService:
                                       access_token: str) -> Dict:
         """Setup GitHub Actions integration"""
         integration = {
-            "type": "github",
+            "type": GITHUB_INTEGRATION,
             "project_id": project_id,
             "repo_url": repo_url,
             "access_token": access_token,
             "enabled": True,
             "config": {
-                "run_on_pr": True,
-                "run_on_push": True,
-                "branches": ["main", "develop"]
+                "run_on_pr": DEFAULT_PR_ENABLED,
+                "run_on_push": DEFAULT_PUSH_ENABLED,
+                "branches": DEFAULT_BRANCHES
             }
         }
         
