@@ -1,12 +1,18 @@
 """
 Structured Logging Configuration
+
+Advanced logging setup with JSON formatting for production environments.
+Provides structured log output with timestamps, levels, and contextual metadata.
 """
 
+import json
 import logging
 import sys
 from datetime import datetime
 from typing import Any, Dict
-import json
+
+# Default log format for development
+DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
 class JSONFormatter(logging.Formatter):
