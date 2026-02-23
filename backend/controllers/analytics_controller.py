@@ -11,13 +11,13 @@ router = APIRouter()
 
 @router.get("/analytics/{project_id}/productivity")
 async def get_team_productivity(project_id: str, days: int = Query(30)):
-    """Get team productivity metrics"""
+    """Get team productivity metrics for the specified time period."""
     try:
-        service = TeamAnalyticsService(None)
-        result = await service.get_team_productivity(project_id, days)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        analytics_service = TeamAnalyticsService(None)
+        productivity_metrics = await analytics_service.get_team_productivity(project_id, days)
+        return productivity_metrics
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
 
 
 @router.get("/analytics/{project_id}/cost-savings")
