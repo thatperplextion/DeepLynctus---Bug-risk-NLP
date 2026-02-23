@@ -69,7 +69,7 @@ class NotificationService:
                 continue
             
             notification = {
-                "id": f"notif_{datetime.utcnow().timestamp()}",
+                "id": f"notification_{int(datetime.utcnow().timestamp())}",
                 "project_id": project_id,
                 "type": notification_type,
                 "severity": severity,
