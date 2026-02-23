@@ -1,6 +1,12 @@
+# DeepLynctus Monitoring Stack
+# 
+# Provides comprehensive monitoring and observability for the application
+# including metrics collection, alerting, and visualization dashboards.
+#
 version: '3.8'
 
 services:
+  # Prometheus: Time-series database for metrics collection
   prometheus:
     image: prom/prometheus:latest
     container_name: bugrisk-prometheus
