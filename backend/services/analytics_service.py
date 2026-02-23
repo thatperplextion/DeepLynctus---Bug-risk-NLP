@@ -30,19 +30,24 @@ class AnalyticsService:
             if hasattr(db, '_connected') and not db._connected:
                 await db.connect()
             metrics = await db.get_metrics(project_id)
-            # naive sort parser like "cyclomatic_max:-1"
+            # Parse sort parameter - expected format: "field_name:-1" or "field_name:1"
             if sort:
                 try:
                     field, direction = sort.split(":")
+                    # Convert direction string to boolean for reverse sorting
                     reverse = direction.strip() == "-1"
+                    # Apply sorting to metrics based on specified field
                     metrics = sorted(metrics, key=lambda m: m.get(field, 0), reverse=reverse)
                 except Exception:
+                    # Silently ignore invalid sort parameters
                     pass
+            
+            # Return structured response with metrics and metadata
             return {
                 "project_id": project_id,
-                "metrics": metrics[:limit],
-                "total": len(metrics),
-                "updated_at": "now"
+                "metrics": metrics[:limit],  # Apply limit to results
+                "total": len(metrics),       # Total count before limiting
+                "updated_at": "now"          # Timestamp for cache invalidation
             }
         except Exception as e:
             print(f"Error in fetch_metrics: {e}")
