@@ -42,8 +42,8 @@ class CacheService:
         if key in self.cache:
             del self.cache[key]
     
-    def clear(self):
-        """Clear all cache"""
+    def clear(self) -> None:
+        """Clear all cache entries and reset cache statistics."""
         self.cache.clear()
 
 
