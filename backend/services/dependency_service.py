@@ -28,6 +28,7 @@ class DependencyAnalyzer:
         
         all_files = python_files + js_files + jsx_files + ts_files + tsx_files
         
+        # Define directories to ignore during analysis
         ignore_dirs = {'node_modules', 'venv', '.venv', '__pycache__', '.git', 'dist', 'build'}
         all_files = [f for f in all_files if not any(d in f.parts for d in ignore_dirs)]
         

@@ -13,7 +13,8 @@ class ComparisonService:
     
     @staticmethod
     async def get_scan_history(project_id: str, limit: int = 30) -> List[Dict[str, Any]]:
-        """Get list of historical scans for a project."""
+        """Get list of historical scans for a project with optional limit."""
+        # Retrieve database connection
         db = get_database()
         
         # Get all scan records for this project

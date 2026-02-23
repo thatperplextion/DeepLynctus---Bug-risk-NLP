@@ -22,7 +22,7 @@ class JobService:
         """
         db = get_database()
         
-        # Get project info
+        # Retrieve project information from database
         project = await db.get_project(project_id)
         if not project:
             return {"error": "Project not found", "started_at": datetime.utcnow().isoformat()}

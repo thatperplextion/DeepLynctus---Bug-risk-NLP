@@ -39,8 +39,8 @@ class MLEnhancementService:
             "recent_changes": RECENT_CHANGES_WEIGHT
         }
         
-        # Normalize to match risk score
-        total_contribution = sum(abs(v) for v in features.values())
+        # Normalize feature contributions to match actual risk score
+        total_contribution = sum(abs(value) for value in features.values())
         normalized_features = {
             k: (v / total_contribution) * risk_score
             for k, v in features.items()
