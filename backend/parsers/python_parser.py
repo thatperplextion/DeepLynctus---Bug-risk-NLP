@@ -1,3 +1,10 @@
+"""
+Python Code Parser Module
+
+Advanced AST-based parser for Python source code analysis.
+Extracts complexity metrics, security patterns, and code quality indicators.
+"""
+
 import ast
 
 class PythonParser:
