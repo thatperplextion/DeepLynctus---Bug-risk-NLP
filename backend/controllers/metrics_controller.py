@@ -5,16 +5,20 @@ Handles HTTP endpoints for retrieving and analyzing code metrics.
 Provides file-level statistics including LOC, complexity, and quality indicators.
 """
 
+import sys
+import traceback
 from fastapi import APIRouter, HTTPException
+
 from services.analytics_service import AnalyticsService
 from services.db import get_database
-import traceback
-import sys
+
+# Default pagination limit for metrics endpoints
+DEFAULT_METRICS_LIMIT = 50
 
 router = APIRouter()
 
 @router.get("/{project_id}")
-async def get_metrics(project_id: str, limit: int = 50, sort: str | None = None):
+async def get_metrics(project_id: str, limit: int = DEFAULT_METRICS_LIMIT, sort: str | None = None):
     """
     Retrieve code metrics for a specific project.
     
