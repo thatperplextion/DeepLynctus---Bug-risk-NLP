@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Deep Lynctus - Code Quality Analyzer",
-  "version": "1.0.0",
-  "description": "Analyze GitHub repositories directly from your browser with AI-powered code quality insights",
+  "name": "DeepLynctus - AI Code Quality Analyzer",
+  "version": "1.0.1",
+  "description": "AI-powered code quality analysis with machine learning bug prediction and NLP-based code smell detection for GitHub repositories",
+  "author": "DeepLynctus Team",
   "permissions": [
     "activeTab",
     "storage"
