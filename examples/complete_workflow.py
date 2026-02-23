@@ -1,18 +1,22 @@
 """
 Complete Python Example: Automated Security Monitoring Pipeline
 
-This script demonstrates a complete workflow:
-1. Upload and scan a project
-2. Check security score
-3. Setup notifications
-4. Monitor for issues
-5. Generate reports
+This script demonstrates a comprehensive end-to-end workflow for:
+1. Upload and scan a repository project
+2. Analyze security and quality scores
+3. Configure automated notifications
+4. Monitor for critical issues and regressions  
+5. Generate detailed PDF reports
+
+Usage: python complete_workflow.py
+Requirements: requests library and active backend server
 """
 
-import requests
-import time
 import json
+import time
 from typing import Dict, List
+
+import requests
 
 
 class BugRiskClient:
