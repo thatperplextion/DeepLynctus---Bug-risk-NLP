@@ -27,7 +27,20 @@ class IntegrationService:
     
     async def setup_github_integration(self, project_id: str, repo_url: str,
                                       access_token: str) -> Dict:
-        """Setup GitHub Actions integration"""
+        """
+        Setup GitHub Actions integration for automated code analysis.
+        
+        Configures GitHub Actions workflow to trigger code quality scans
+        on pull requests and pushes to specified branches.
+        
+        Args:
+            project_id: Unique project identifier
+            repo_url: GitHub repository URL
+            access_token: GitHub personal access token for API access
+            
+        Returns:
+            Dict containing setup status and generated workflow configuration
+        """
         integration = {
             "type": GITHUB_INTEGRATION,
             "project_id": project_id,
