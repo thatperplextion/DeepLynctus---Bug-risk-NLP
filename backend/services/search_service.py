@@ -139,17 +139,17 @@ class SearchService:
         
         # Risk score filter
         if 'min_risk_score' in filters:
-            min_score = filters['min_risk_score']
+            minimum_risk_score = filters['min_risk_score']
             filtered = [
-                f for f in filtered
-                if f.get('risk_score', 0) >= min_score
+                file_item for file_item in filtered
+                if file_item.get('risk_score', 0) >= minimum_risk_score
             ]
         
         if 'max_risk_score' in filters:
-            max_score = filters['max_risk_score']
+            maximum_risk_score = filters['max_risk_score']
             filtered = [
-                f for f in filtered
-                if f.get('risk_score', 0) <= max_score
+                file_item for file_item in filtered
+                if file_item.get('risk_score', 0) <= maximum_risk_score
             ]
         
         # Complexity filter
