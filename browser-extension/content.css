@@ -1,4 +1,9 @@
-/* content.css - Styles for injected GitHub button */
+/**
+ * DeepLynctus GitHub Integration Styles
+ * 
+ * CSS styles for the analysis button injected into GitHub repository pages.
+ * Designed to integrate seamlessly with GitHub's existing interface.
+ */
 
 .deep-lynctus-container {
   display: inline-flex;
