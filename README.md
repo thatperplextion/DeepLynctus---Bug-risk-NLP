@@ -1,11 +1,15 @@
 
-# DeepLynctus– Intelligent Code Quality & Bug Risk Analyzer (AIML + NLP)
+# 🚀 DeepLynctus – AI-Powered Code Quality & Bug Risk Analyzer
 
-DeepLynctus is an AI-powered system that scans a source-code repository to detect bug-prone files, code smells, technical debt risk, and provides smart refactoring suggestions.  
-It combines static analysis, ML prediction, and NLP patterns, along with visual dashboards and PDF reports.
+**Version**: 2.0.0 | **Platform**: AIML + NLP | **Updated**: February 2026
+
+DeepLynctus is an intelligent system that scans source code repositories to detect bug-prone files, code smells, technical debt risks, and provides smart refactoring suggestions powered by machine learning.  
+
+**Key Technologies**: Static Analysis • ML Prediction • NLP Patterns • Visual Dashboards • PDF Reports
 
 ---
-## Prerequisites
+
+## 🔧 Prerequisites
 
 - **Node.js** 18+ & npm
 - **Python** 3.10+
