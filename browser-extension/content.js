@@ -1,4 +1,9 @@
-// content.js - Inject analyze button into GitHub pages
+/**
+ * DeepLynctus GitHub Integration Content Script
+ * 
+ * Dynamically injects analysis button into GitHub repository pages.
+ * Provides seamless integration with the DeepLynctus analysis platform.
+ */
 
 (function() {
   'use strict';
