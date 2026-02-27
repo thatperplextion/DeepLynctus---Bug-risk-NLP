@@ -7,9 +7,10 @@
   "author": "DeepLynctus Team",
   "license": "MIT",
   "scripts": {
-    "dev": "vite",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "vite preview"
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --fix"
   },
   "dependencies": {
     "react": "18.2.0",
