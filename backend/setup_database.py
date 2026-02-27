@@ -1,12 +1,15 @@
 """
-Setup MongoDB Collections and Indexes
+MongoDB Database Setup and Initialization Script
 
-This script creates all necessary collections and indexes in MongoDB Atlas
-Run this to initialize your database schema
+This script creates all necessary collections, indexes, and constraints in MongoDB Atlas.
+Ensures proper database schema initialization for the DeepLynctus application.
+
+Usage: python setup_database.py
+Requirements: MongoDB connection string in environment variables
 """
 
-import os
 import asyncio
+import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
