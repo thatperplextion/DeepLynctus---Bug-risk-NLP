@@ -1,6 +1,16 @@
-"""Test database connection and query"""
+"""
+Database Connection Test Suite
+
+Validates MongoDB Atlas connectivity and basic database operations.
+Use this script to verify database setup before running the application.
+
+Usage: python test_db.py
+"""
+
 import asyncio
 import sys
+
+# Add current directory to Python path for local imports
 sys.path.insert(0, '.')
 
 async def test():
