@@ -1,10 +1,22 @@
-# Performance Benchmarking Script
+"""
+DeepLynctus Performance Benchmarking Suite
 
-import time
+Comprehensive performance testing for API endpoints, concurrent requests,
+and system load testing. Provides detailed metrics and response time analysis.
+
+Usage: python performance_benchmark.py
+"""
+
 import statistics
-import requests
+import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Dict
+from typing import Dict, List
+
+import requests
+
+# Performance testing configuration
+DEFAULT_CONCURRENT_REQUESTS = 10
+DEFAULT_TEST_DURATION = 30
 
 
 class PerformanceBenchmark:
