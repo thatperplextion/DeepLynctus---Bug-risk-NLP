@@ -15,10 +15,10 @@ class ComparisonService:
     async def get_scan_history(project_id: str, limit: int = 30) -> List[Dict[str, Any]]:
         """Get list of historical scans for a project with optional limit."""
         # Retrieve database connection
-        db = get_database()
+        database_connection = get_database()
         
-        # Get all scan records for this project
-        scans = await db.get_scan_history(project_id, limit=limit)
+        # Get all scan records for this project with specified limit
+        scans = await database_connection.get_scan_history(project_id, limit=limit)
         
         return sorted(scans, key=lambda x: x.get("timestamp", 0), reverse=True)
     

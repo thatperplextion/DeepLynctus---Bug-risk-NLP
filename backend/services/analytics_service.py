@@ -49,10 +49,10 @@ class AnalyticsService:
                 "total": len(metrics),       # Total count before limiting
                 "updated_at": "now"          # Timestamp for cache invalidation
             }
-        except Exception as e:
-            print(f"Error in fetch_metrics: {e}")
+        except Exception as error:
+            print(f"Error in fetch_metrics: {error}")
             traceback.print_exc()
-            raise
+            raise error
 
     @staticmethod
     async def fetch_risks(project_id: str, tier: str | None, top: int):
