@@ -1,4 +1,14 @@
-# Deployment Guide
+# DeepLynctus Deployment Guide
+
+**Platform**: AI-Powered Code Quality & Bug Risk Analysis  
+**Version**: 2.0.0  
+**Updated**: February 27, 2026  
+**Deployment Targets**: Local Development, Production, Cloud
+
+Comprehensive deployment instructions for setting up DeepLynctus in various environments.
+Includes backend FastAPI service, React frontend, and MongoDB database configuration.
+
+---
 
 ## Prerequisites
 - Python 3.10+
