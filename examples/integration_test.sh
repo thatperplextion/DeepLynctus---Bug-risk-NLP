@@ -1,13 +1,23 @@
 #!/bin/bash
 
-# Bug-Risk-NLP Integration Test Script
-# Tests all major API endpoints
+##############################################################################
+# DeepLynctus Integration Test Suite
+#
+# Comprehensive end-to-end testing of all major API endpoints and workflows.
+# Validates file upload, scanning, analysis, and reporting functionality.
+#
+# Usage: ./integration_test.sh
+# Requirements: curl, jq, active backend server
+##############################################################################
 
+set -e  # Exit on any error
+
+# Configuration
 API_BASE="http://localhost:8000"
 PROJECT_ID=""
 SESSION_ID=""
 
-echo "=== Bug-Risk-NLP Integration Tests ==="
+echo "=== DeepLynctus Integration Tests ==="
 echo ""
 
 # Test 1: Health Check
