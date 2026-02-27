@@ -1,4 +1,13 @@
-# API Documentation - Bug Risk NLP
+# DeepLynctus API Documentation
+
+**Version**: 2.0.0  
+**Base URL**: http://localhost:8000  
+**Last Updated**: February 27, 2026
+
+Comprehensive API reference for the DeepLynctus AI-powered code quality and bug risk analysis platform. 
+Provides endpoints for repository analysis, user management, metrics collection, and reporting.
+
+---
 
 ## Authentication Endpoints
 
