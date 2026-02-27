@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeepLynctus - AI Code Quality Analyzer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AI-powered code quality analysis with machine learning bug prediction and NLP-based code smell detection for GitHub repositories",
   "author": "DeepLynctus Team",
   "permissions": [
