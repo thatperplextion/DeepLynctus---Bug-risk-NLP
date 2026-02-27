@@ -1,9 +1,18 @@
 #!/usr/bin/env node
 
+/**
+ * DeepLynctus CLI Tool
+ * 
+ * Command-line interface for AI-powered code quality analysis.
+ * Provides repository scanning, risk assessment, and report generation.
+ */
+
 const { Command } = require('commander');
 const axios = require('axios');
 const chalk = require('chalk');
 const ora = require('ora');
+
+// Load environment variables from .env file
 require('dotenv').config();
 
 const program = new Command();
