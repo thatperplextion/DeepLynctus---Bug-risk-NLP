@@ -1,6 +1,11 @@
-// background.js - Service worker for browser extension
+/**
+ * DeepLynctus Browser Extension Background Script
+ * 
+ * Service worker that handles extension lifecycle, API communication,
+ * and background processing for the GitHub code analysis integration.
+ */
 
-// Handle extension installation
+// Handle extension installation and setup
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('Deep Lynctus extension installed');
