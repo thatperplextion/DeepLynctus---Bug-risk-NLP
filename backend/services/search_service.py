@@ -192,9 +192,9 @@ class SearchService:
         
         return filtered
     
-    def _get_severity(self, file: Dict) -> str:
-        """Determine file severity based on risk score"""
-        risk_score = file.get('risk_score', 0)
+    def _get_severity(self, file_data: Dict) -> str:
+        """Determine file severity based on risk score and threshold analysis."""
+        risk_score = file_data.get('risk_score', 0)
         if risk_score >= 0.8:
             return 'critical'
         elif risk_score >= 0.6:
