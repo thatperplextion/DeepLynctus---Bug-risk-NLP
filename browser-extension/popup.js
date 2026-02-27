@@ -1,5 +1,11 @@
-// popup.js - Browser extension popup logic
+/**
+ * DeepLynctus Browser Extension Popup Interface
+ * 
+ * Main interface logic for the extension popup, handling user interactions,
+ * API communication, and repository analysis initiation.
+ */
 
+// Global state variables
 let currentTab = null;
 let repoInfo = null;
 
