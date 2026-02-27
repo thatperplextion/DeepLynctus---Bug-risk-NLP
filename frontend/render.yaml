@@ -1,3 +1,6 @@
+# Render.com deployment configuration for DeepLynctus frontend
+# Configures Node.js build environment and static site deployment
+
 services:
   - type: static
     name: bug-risk-nlp-frontend
