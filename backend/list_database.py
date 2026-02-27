@@ -1,13 +1,17 @@
 """
-List MongoDB Collections and Indexes
+MongoDB Database Inspector and Listing Tool
 
-Shows what's currently in your MongoDB Atlas database
+Displays collections, indexes, and database statistics from MongoDB Atlas.
+Useful for debugging and monitoring database structure and content.
+
+Usage: python list_database.py
 """
 
-import os
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+import os
+
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
