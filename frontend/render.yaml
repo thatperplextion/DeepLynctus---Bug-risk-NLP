@@ -10,4 +10,4 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: VITE_API_URL
-        value: https://bug-risk-nlp-backend.onrender.com
+        value: https://deeplynctus-bug-risk-nlp.onrender.com
