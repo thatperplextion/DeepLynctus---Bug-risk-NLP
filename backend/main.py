@@ -10,6 +10,7 @@ handling authentication, request routing, and coordinating various analysis modu
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -53,6 +54,20 @@ async def lifespan(app: FastAPI):
     db = get_database()
     # Startup: connect to database
     await db.connect()
+    
+    # Initialize demo data for production in-memory DB
+    if hasattr(db, 'projects') and not db.projects:
+        demo_project = {
+            "_id": "demo-project",
+            "name": "Demo Project",
+            "created_at": datetime.now().isoformat(),
+            "repository_url": "https://github.com/demo/project",
+            "last_scan": datetime.now().isoformat(),
+            "status": "completed"
+        }
+        await db.upsert_project(demo_project)
+        print("Initialized demo project for empty database")
+    
     yield
     # Shutdown: close database connection
     await db.close()
@@ -100,15 +115,17 @@ async def get_all_projects():
         db = get_database()
         # Get all projects from database
         projects = []
-        if hasattr(db, 'projects'):
+        if hasattr(db, 'projects') and db.projects:
             # In-memory database
             projects = list(db.projects.values())
-        else:
+        elif hasattr(db, 'find'):
             # MongoDB database
             projects = await db.find("projects", {})
-        return projects
+        return projects if projects else []
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return empty list instead of error to prevent frontend crashes
+        print(f"Error fetching projects: {e}")
+        return []
 
 
 # ============== Dependency Graph Endpoints ==============
