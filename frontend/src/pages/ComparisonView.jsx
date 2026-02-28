@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { GlassCard, GradientButton, RiskBadge, Loader } from '../components/ui'
+import { API_URL } from '../services/api'
 
 export default function ComparisonView({ projectId }) {
   const [scans, setScans] = useState([])
@@ -18,7 +19,7 @@ export default function ComparisonView({ projectId }) {
     const fetchScans = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/comparison/${projectId}/history?limit=20`
+          `${API_URL}/comparison/${projectId}/history?limit=20`
         )
         const data = await response.json()
         setScans(data.scans || [])
@@ -45,7 +46,7 @@ export default function ComparisonView({ projectId }) {
       setError(null)
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/comparison/${projectId}/compare?current_scan=${selectedCurrent}&previous_scan=${selectedPrevious}`
+          `${API_URL}/comparison/${projectId}/compare?current_scan=${selectedCurrent}&previous_scan=${selectedPrevious}`
         )
         const data = await response.json()
         setComparisonData(data)

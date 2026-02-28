@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { GlassCard, Loader } from '../components/ui'
+import { API_URL } from '../services/api'
 
 export default function TimelineAnalysis({ projectId }) {
   const [timelineData, setTimelineData] = useState(null)
