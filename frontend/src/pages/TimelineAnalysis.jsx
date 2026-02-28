@@ -19,8 +19,8 @@ export default function TimelineAnalysis({ projectId }) {
       setError(null)
       try {
         const [timelineRes, roiRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/comparison/${projectId}/timeline?days=${days}`),
-          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/comparison/${projectId}/roi?days=${days}`)
+          fetch(`${API_URL}/comparison/${projectId}/timeline?days=${days}`),
+          fetch(`${API_URL}/comparison/${projectId}/roi?days=${days}`)
         ])
 
         const timelineJson = await timelineRes.json()

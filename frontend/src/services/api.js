@@ -29,7 +29,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 120000) {
       throw new Error('Request timed out - the server took too long to respond');
     }
     if (error.message.includes('Failed to fetch')) {
-      throw new Error('Cannot connect to server. Is the backend running on http://localhost:8000?');
+      throw new Error(`Cannot connect to server. Is the backend running on ${API_URL}?`);
     }
     throw error;
   }
