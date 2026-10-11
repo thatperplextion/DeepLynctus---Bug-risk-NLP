@@ -1,5 +1,15 @@
+# DeepLynctus: AI-Powered Code Quality & Bug-Risk Analyzer
 
-# 🚀 DeepLynctus – AI-Powered Code Quality & Bug Risk Analyzer
+> Point it at a repository or ZIP; it scores every file for bug risk, flags code smells with NLP, and tells you what to fix first.
+
+| | |
+|---|---|
+| **Stack** | Python, FastAPI, scikit-learn, NLP, React, Tailwind, MongoDB, Docker |
+| **Also ships** | CLI, browser extension, PDF reports |
+| **Live** | [deeplynctus-bug-risk-nlp-1.onrender.com](https://deeplynctus-bug-risk-nlp-1.onrender.com) |
+| **Docs** | [API](docs/API_DOCUMENTATION.md) · [Deployment](docs/DEPLOYMENT_GUIDE.md) · [Changelog](CHANGELOG.md) · [Reports](docs/reports/) · [CI configs](docs/ci/) |
+
+---
 
 **Version**: 2.0.0 | **Platform**: AIML + NLP | **Updated**: February 2026
 
@@ -54,7 +64,7 @@ DeepLynctus is an intelligent system that scans source code repositories to dete
 ### ✔ PDF Summary Report
 - Risk overview
 
-### ✔ Project Comparison (NEW!)
+### ✔ Project Comparison 
 - Compare two projects side-by-side
 - Quality score differences
 - Complexity analysis comparison
@@ -62,7 +72,7 @@ DeepLynctus is an intelligent system that scans source code repositories to dete
 - Winner determination with weighted scoring
 - Detailed breakdowns for all metrics
 
-### ✔ Browser Extension (NEW!)
+### ✔ Browser Extension 
 - Chrome extension for GitHub integration
 - One-click repository analysis from GitHub
 - Inject "Analyze with Deep Lynctus" button on repo pages
