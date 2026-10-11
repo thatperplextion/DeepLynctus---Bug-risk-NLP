@@ -319,7 +319,7 @@ SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK
 
 ## Additional Resources
 
-- API Documentation: `../API_DOCUMENTATION.md`
-- Deployment Guide: `../DEPLOYMENT_GUIDE.md`
+- API Documentation: `../docs/API_DOCUMENTATION.md`
+- Deployment Guide: `../docs/DEPLOYMENT_GUIDE.md`
 - Frontend Examples: `./frontend_examples.md`
 - Advanced Integrations: `./integrations.md`
